@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #define LISTEN_BACKLOG 25
 
@@ -55,6 +56,21 @@ tcp_server_status bind_tcp_server(tcp_server_info *server_info, int port) {
         perror("bind");
         return SERVER_BIND_ERROR;
     }
+
+    return SERVER_OK;
+}
+
+tcp_server_status accept_client(int server_fd, int *client_fd) {
+    struct sockaddr_in client_info = {0};
+    socklen_t client_info_len = sizeof(client_info);
+
+    int fd = accept(server_fd, (struct sockaddr *)&client_info, &client_info_len);
+    if (fd == -1) {
+        perror("accept");
+        return SERVER_ACCEPT_ERROR;
+    }
+
+    *client_fd = fd;
 
     return SERVER_OK;
 }

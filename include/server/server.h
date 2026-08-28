@@ -11,6 +11,7 @@ typedef enum {
     SERVER_SOCKET_INIT_ERROR,
     SERVER_SETSOCKOPT_ERROR,
     SERVER_BIND_ERROR,
+    SERVER_ACCEPT_ERROR,
 } tcp_server_status;
 
 typedef struct {
