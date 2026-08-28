@@ -19,4 +19,7 @@ typedef struct {
     struct sockaddr_in address;
 } tcp_server_info;
 
+tcp_server_status bind_tcp_server(tcp_server_info *server_info, int port);
+tcp_server_status accept_client(int server_fd, int *client_fd);
+
 #endif // !SERVER_H
