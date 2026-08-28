@@ -4,5 +4,7 @@
 -Werror
 -Wextra
 -Wpedantic
+-MP
+-MMD
 -pthread
 -D_GNU_SOURCE
