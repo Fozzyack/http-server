@@ -33,7 +33,7 @@ tcp_server_status bind_tcp_server(tcp_server_info *server_info, int port) {
     int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd == -1) {
         perror("socket");
-        log_message(LOG_ERROR, "socket error");
+        log_errno(LOG_ERROR, "socket");
         return SERVER_SOCKET_INIT_ERROR;
     }
     server_info->socket_fd = fd;
@@ -42,24 +42,24 @@ tcp_server_status bind_tcp_server(tcp_server_info *server_info, int port) {
     int reuse_port = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr)) == -1) {
         perror("setsockopt");
-        log_message(LOG_ERROR, "setsockopt error");
+        log_errno(LOG_ERROR, "setsockopt");
         return SERVER_SETSOCKOPT_ERROR;
     }
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &reuse_port, sizeof(reuse_port)) == -1) {
         perror("setsockopt");
-        log_message(LOG_ERROR, "setsockopt error");
+        log_errno(LOG_ERROR, "setsockopt");
         return SERVER_SETSOCKOPT_ERROR;
     }
 
-    if (bind(fd, (struct sockaddr *)server_info, sizeof(*server_info)) == -1) {
+    if (bind(fd, (struct sockaddr *)&(server_info->address), sizeof(server_info->address)) == -1) {
         perror("bind");
-        log_message(LOG_ERROR, "bind error");
+        log_errno(LOG_ERROR, "bind");
         return SERVER_BIND_ERROR;
     }
 
     if (listen(fd, LISTEN_BACKLOG) == -1) {
         perror("bind");
-        log_message(LOG_ERROR, "listen error");
+        log_errno(LOG_ERROR, "listen");
         return SERVER_BIND_ERROR;
     }
 
@@ -73,7 +73,7 @@ tcp_server_status accept_client(int server_fd, int *client_fd) {
     int fd = accept(server_fd, (struct sockaddr *)&client_info, &client_info_len);
     if (fd == -1) {
         perror("accept");
-        log_message(LOG_ERROR, "accept error");
+        log_errno(LOG_ERROR, "accept");
         return SERVER_ACCEPT_ERROR;
     }
 
