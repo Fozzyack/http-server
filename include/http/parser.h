@@ -9,6 +9,7 @@ typedef enum {
     PARSE_READ_OK,
     PARSE_READ_ERROR,
     PARSE_SCAN_ERROR,
+    PARSE_FIELD_TOO_BIG,
 } parse_status;
 
 typedef struct {
