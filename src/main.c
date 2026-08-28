@@ -7,7 +7,7 @@
 void handle_client(int client_fd) {
     http_request req = {0};
 
-    if (read_http_request(client_fd, &req) != PARSE_READ_OK) {
+    if (read_http_request(client_fd, &req) != PARSE_OK) {
         log_message(LOG_ERROR, "Failed to parse HTTP request");
         close(client_fd);
         return;

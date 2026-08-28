@@ -6,9 +6,11 @@
 #define PROTOCOL_LENGTH 16
 
 typedef enum {
-    PARSE_READ_OK,
-    PARSE_READ_ERROR,
+    PARSE_OK,
+    PARSE_ERROR,
+    PARSE_INCOMPLETE,
     PARSE_SCAN_ERROR,
+    PARSE_READ_ERROR,
     PARSE_FIELD_TOO_BIG,
 } parse_status;
 
