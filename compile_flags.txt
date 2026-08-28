@@ -1,0 +1,8 @@
+-std=gnu17
+-Iinclude
+-Wall
+-Werror
+-Wextra
+-Wpedantic
+-pthread
+-D_GNU_SOURCE
