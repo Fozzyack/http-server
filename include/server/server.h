@@ -7,6 +7,10 @@
 typedef enum {
     SERVER_OK,
     SERVER_ERROR,
+    SERVER_INFO_DOES_NOT_EXIST,
+    SERVER_SOCKET_INIT_ERROR,
+    SERVER_SETSOCKOPT_ERROR,
+    SERVER_BIND_ERROR,
 } tcp_server_status;
 
 typedef struct {
