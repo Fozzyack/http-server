@@ -8,9 +8,9 @@
 typedef enum {
     PARSE_OK,
     PARSE_ERROR,
-    PARSE_INCOMPLETE,
-    PARSE_SCAN_ERROR,
     PARSE_READ_ERROR,
+    PARSE_LINE_NOT_FOUND,
+    PARSE_READ_SOCKET_DISCONNECTED,
     PARSE_FIELD_TOO_BIG,
 } parse_status;
 
@@ -19,7 +19,5 @@ typedef struct {
     char path[REQUEST_TARGET_LENGTH];
     char protocol[PROTOCOL_LENGTH];
 } http_request;
-
-parse_status read_http_request(int socket_fd, http_request *request);
 
 #endif // PARSER_H
