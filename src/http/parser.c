@@ -1,6 +1,7 @@
 #include "http/parser.h"
 #include "log/log.h"
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -51,7 +52,7 @@ parse_status find_line(http_request_buffer *req_buffer, size_t *eol) {
 }
 
 // When running find_line would have made sure we have a line in buffer to process
-parse_status parse_request_line(http_request *request, http_request_buffer *req_buffer) {
+parse_status parse_request_line(http_request *request, http_request_buffer *req_buffer, size_t *eol) {
     char *destinations[] = {
         request->method,
         request->path,
@@ -74,7 +75,6 @@ parse_status parse_request_line(http_request *request, http_request_buffer *req_
         }
 
         size_t length = (size_t)(cursor - start);
-        req_buffer->start += length;
         if (length >= capacities[i]) {
             log_message(LOG_ERROR, "request line header field exceeds max width");
             return PARSE_LINE_FIELD_EXCEEDS_MAX_WIDTH;
@@ -93,6 +93,7 @@ parse_status parse_request_line(http_request *request, http_request_buffer *req_
         log_message(LOG_ERROR, "request line header field ends incorrectly");
         return PARSE_LINE_ERROR;
     }
+    req_buffer->start = *eol;
     align_buffer(req_buffer);
 
     return PARSE_OK;
@@ -106,6 +107,8 @@ parse_status parse_http_request(http_request *request, int client_fd) {
         .start = 0,
     };
 
+    request->header_count = 0;
+
     int has_req_line = 0;
     int has_headers = 1; // set as 1 for now as it is not yet implemented
 
@@ -116,7 +119,7 @@ parse_status parse_http_request(http_request *request, int client_fd) {
         if (status != PARSE_LINE_NOT_FOUND) {
             // logic here
             if (!has_req_line) {
-                if (parse_request_line(request, &req_buffer) == PARSE_OK) {
+                if (parse_request_line(request, &req_buffer, &eol) == PARSE_OK) {
                     has_req_line = 1;
                 } else {
                     return PARSE_ERROR;
