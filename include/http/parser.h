@@ -1,11 +1,13 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stddef.h>
 #define METHOD_LENGTH 8
 #define REQUEST_TARGET_LENGTH 2048
 #define PROTOCOL_LENGTH 16
+#define BUFFER_SIZE 8192
 
-typedef enum {
+typedef enum parse_status {
     PARSE_OK,
     PARSE_ERROR,
     PARSE_READ_ERROR,
@@ -16,7 +18,13 @@ typedef enum {
     PARSE_FIELD_TOO_BIG,
 } parse_status;
 
-typedef struct {
+typedef struct http_request_buffer {
+    char buffer[BUFFER_SIZE];
+    size_t start;
+    size_t end;
+} http_request_buffer;
+
+typedef struct http_request {
     char method[METHOD_LENGTH];
     char path[REQUEST_TARGET_LENGTH];
     char protocol[PROTOCOL_LENGTH];
