@@ -4,19 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-void handle_client(int client_fd) {
-    http_request req = {0};
-
-    if (read_http_request(client_fd, &req) != PARSE_OK) {
-        log_message(LOG_ERROR, "Failed to parse HTTP request");
-        close(client_fd);
-        return;
-    }
-    log_message(LOG_INFO, "HTTP request parsed");
-    log_message(LOG_INFO, "method: %s", req.method);
-    log_message(LOG_INFO, "path: %s", req.path);
-    log_message(LOG_INFO, "protocol: %s", req.protocol);
-}
+void handle_client(int client_fd) { http_request req = {0}; }
 
 int main(void) {
 
