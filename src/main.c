@@ -1,18 +1,23 @@
 #include "http/parser.h"
 #include "log/log.h"
 #include "server/server.h"
+#include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 void handle_client(int client_fd) {
     http_request req = {0};
-    if (parse_http_request(&req, client_fd) != PARSE_OK) {
-        log_message(LOG_ERROR, "huh");
+    int status;
+    if ((status = parse_http_request(&req, client_fd)) != PARSE_OK) {
+        log_message(LOG_ERROR, "huh %d", status);
+        return;
     }
 
-    log_message(LOG_INFO, "%s", req.method);
-    log_message(LOG_INFO, "%s", req.path);
-    log_message(LOG_INFO, "%s", req.protocol);
+    log_message(LOG_INFO, "%s %s %s", req.method, req.path, req.protocol);
+
+    for (size_t i = 0; i < req.header_count; i++) {
+        log_message(LOG_INFO, "%s: %s", req.headers[i].name, req.headers[i].value);
+    }
 }
 
 int main(void) {

@@ -77,22 +77,60 @@ parse_status parse_request_line(http_request *request, http_request_buffer *req_
         size_t length = (size_t)(cursor - start);
         if (length >= capacities[i]) {
             log_message(LOG_ERROR, "request line header field exceeds max width");
-            return PARSE_LINE_FIELD_EXCEEDS_MAX_WIDTH;
+            return PARSE_REQUEST_FIELD_EXCEEDS_MAX_LENGTH;
         }
         memcpy(destinations[i], start, length);
         destinations[i][length] = '\0';
 
         if (i < 2) {
             if (*cursor != ' ') {
-                return PARSE_LINE_ERROR;
+                return PARSE_REQUEST_FIELD_ERROR;
             }
             cursor++;
         }
     }
     if (*cursor != '\r') {
         log_message(LOG_ERROR, "request line header field ends incorrectly");
-        return PARSE_LINE_ERROR;
+        return PARSE_REQUEST_FIELD_ERROR;
     }
+    req_buffer->start = *eol;
+    align_buffer(req_buffer);
+
+    return PARSE_OK;
+}
+
+parse_status parse_headers(http_request *request, http_request_buffer *req_buffer, size_t *eol) {
+    char *cursor = req_buffer->buffer;
+    char *start = cursor;
+    http_request_header header = {0};
+    while (*cursor != ':') {
+        if (*cursor == '\r' || *cursor == '\n') {
+            return PARSE_HEADER_ERROR;
+        }
+        cursor++;
+    }
+    size_t length = (size_t)(cursor - start);
+    if (length >= HEADER_NAME_LENGTH) {
+        return PARSE_HEADER_FIELD_EXCEEDS_MAX_LENGTH;
+    }
+    memcpy(header.name, start, length);
+    header.name[length] = '\0';
+
+    cursor += 2;    // skips the ': '
+    start = cursor; // reset start
+
+    while (*cursor != '\r' && *cursor != '\n') {
+        cursor++;
+    }
+    length = (size_t)(cursor - start);
+    if (length >= HEADER_VALUE_LENGTH) {
+        return PARSE_HEADER_FIELD_EXCEEDS_MAX_LENGTH;
+    }
+    memcpy(header.value, start, length);
+    header.value[length] = '\0';
+
+    request->headers[request->header_count] = header;
+    request->header_count++;
     req_buffer->start = *eol;
     align_buffer(req_buffer);
 
@@ -110,7 +148,7 @@ parse_status parse_http_request(http_request *request, int client_fd) {
     request->header_count = 0;
 
     int has_req_line = 0;
-    int has_headers = 1; // set as 1 for now as it is not yet implemented
+    int has_headers = 0;
 
     size_t eol = 0; // holds where the end of the line is
     while (!has_req_line || !has_headers) {
@@ -119,13 +157,21 @@ parse_status parse_http_request(http_request *request, int client_fd) {
         if (status != PARSE_LINE_NOT_FOUND) {
             // logic here
             if (!has_req_line) {
-                if (parse_request_line(request, &req_buffer, &eol) == PARSE_OK) {
+                if ((status = parse_request_line(request, &req_buffer, &eol) == PARSE_OK)) {
                     has_req_line = 1;
                 } else {
-                    return PARSE_ERROR;
+                    return status;
                 }
             } else if (!has_headers) {
-                break;
+                if (eol == 2) {
+                    has_headers = 1;
+                    req_buffer.start = eol;
+                    align_buffer(&req_buffer);
+                } else {
+                    if ((status = parse_headers(request, &req_buffer, &eol)) != PARSE_OK) {
+                        return status;
+                    }
+                }
             }
         } else {
             status = read_from_socket(client_fd, &req_buffer);
