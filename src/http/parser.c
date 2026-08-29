@@ -49,7 +49,7 @@ parse_status find_line(char *buffer, size_t *buffer_end, size_t *eol) {
     return PARSE_LINE_NOT_FOUND;
 }
 
-parse_status parse_http_request(http_request *request) {
+parse_status parse_http_request(http_request *request, int client_fd) {
 
     char buffer[BUFFER_SIZE];
     size_t buffer_start = 0;
@@ -58,7 +58,17 @@ parse_status parse_http_request(http_request *request) {
     int has_req_line = 0;
     int has_headers = 0;
 
-    while (!has_read_req || !has_headers) {
+    while (!has_req_line || !has_headers) {
+        size_t eol = 0;
+        parse_status status = find_line(buffer, &buffer_end, &eol);
+        if (status != PARSE_LINE_NOT_FOUND) {
+            // logic here
+        } else {
+            status = read_from_socket(client_fd, buffer, &buffer_end);
+            if (status == PARSE_READ_SOCKET_DISCONNECTED) {
+            }
+            return PARSE_READ_SOCKET_DISCONNECTED;
+        }
     }
 
     return PARSE_OK;
