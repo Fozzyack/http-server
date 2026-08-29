@@ -4,7 +4,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-void handle_client(int client_fd) { http_request req = {0}; }
+void handle_client(int client_fd) { http_request req = {0}; 
+    if(parse_http_request(&req, client_fd) != PARSE_OK) {
+        log_message(LOG_ERROR, "huh");
+    }
+    
+    log_message(LOG_INFO, "%s", req.method); 
+    log_message(LOG_INFO, "%s", req.path); 
+    log_message(LOG_INFO, "%s", req.protocol); 
+}
 
 int main(void) {
 
