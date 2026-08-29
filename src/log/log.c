@@ -1,6 +1,7 @@
 #include "log/log.h"
 #include <errno.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -37,4 +38,21 @@ void log_errno(log_level level, const char *context) {
     int error = errno;
 
     log_message(level, "%s: %s", context, strerror(error));
+}
+
+void log_special_chars(const char *buff, size_t start, size_t end) {
+    fputs("[DEBUG] ", stderr);
+    for (size_t i = 0; i < (end - start); i++) {
+        switch (buff[i + start]) {
+        case '\r':
+            printf("\\r");
+            break;
+        case '\n':
+            printf("\\n");
+            break;
+        default:
+            putchar(buff[i]);
+        }
+    }
+    putchar('\n');
 }
