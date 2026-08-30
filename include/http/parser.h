@@ -37,14 +37,14 @@ typedef struct http_request_buffer {
 typedef struct http_request_header {
     char name[HEADER_NAME_LENGTH];
     char value[HEADER_VALUE_LENGTH];
-} http_request_header;
+} http_header;
 
 typedef struct http_request {
     char method[METHOD_LENGTH];
     char path[REQUEST_TARGET_LENGTH];
     char protocol[PROTOCOL_LENGTH];
 
-    http_request_header headers[MAX_HEADERS];
+    http_header headers[MAX_HEADERS];
     size_t header_count;
 } http_request;
 

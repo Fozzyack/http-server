@@ -1,5 +1,6 @@
 #include "http/parser.h"
 #include "log/log.h"
+#include <linux/limits.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -108,7 +109,7 @@ parse_status parse_headers(http_request *request, http_request_buffer *req_buffe
     }
     char *cursor = req_buffer->buffer;
     char *start = cursor;
-    http_request_header header = {0};
+    http_header header = {0};
     while (*cursor != ':') {
         if (*cursor == '\r' || *cursor == '\n') {
             return PARSE_HEADER_ERROR;
@@ -123,7 +124,8 @@ parse_status parse_headers(http_request *request, http_request_buffer *req_buffe
     header.name[length] = '\0';
 
     cursor++;
-    if (*cursor == ' ') cursor++;
+    if (*cursor == ' ')
+        cursor++;
     start = cursor;
 
     while (*cursor != '\r' && *cursor != '\n') {
@@ -144,15 +146,23 @@ parse_status parse_headers(http_request *request, http_request_buffer *req_buffe
     return PARSE_OK;
 }
 
+void init_request_buffer(http_request *request, http_request_buffer *buffer) {
+
+    memset(request->method, '\0', METHOD_LENGTH);
+    memset(request->path, '\0', REQUEST_TARGET_LENGTH);
+    memset(request->protocol, '\0', PROTOCOL_LENGTH);
+    memset(request->headers, 0, sizeof(http_header) * MAX_HEADERS);
+    request->header_count = 0;
+
+    memset(buffer, '\0', BUFFER_SIZE);
+    buffer->end = 0;
+    buffer->start = 0;
+}
+
 parse_status parse_http_request(http_request *request, int client_fd) {
 
-    struct http_request_buffer req_buffer = {
-        .buffer = {0},
-        .end = 0,
-        .start = 0,
-    };
-
-    request->header_count = 0;
+    struct http_request_buffer req_buffer;
+    init_request_buffer(request, &req_buffer);
 
     int has_req_line = 0;
     int has_headers = 0;
