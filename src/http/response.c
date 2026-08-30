@@ -9,12 +9,12 @@ void init_response(http_response *response) {
     printf("init res structure\n");
     response->status = 200;
     memset(response->status_response, '\0', STATUS_RESPOSNE_LENGTH);
-    response->headers = calloc(1, sizeof(http_header));
+    response->headers = NULL;
     if (!response->headers) {
         log_errno(LOG_ERROR, "calloc");
     }
     response->header_count = 0;
-    response->body = malloc(sizeof(char) * 64);
+    response->body = NULL;
     if (!response->body) {
         log_errno(LOG_ERROR, "malloc");
     }
