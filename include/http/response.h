@@ -3,7 +3,13 @@
 
 #include "http/parser.h"
 #include <stddef.h>
+
 #define STATUS_RESPOSNE_LENGTH 64
+
+typedef enum http_response_status {
+    RESPONSE_OK,
+    RESPONSE_ERROR,
+} http_response_status;
 
 typedef struct http_response {
 
