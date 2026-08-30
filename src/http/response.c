@@ -24,7 +24,7 @@ void init_response(http_response *response) {
 void destroy_response(http_response *response) {
     printf("destroying  response\n");
     free(response->headers);
-    free(response->body_buffer);
+    free(response->body);
 }
 
 http_response_status response_set_header(const char *key, const char *value, http_response *response) {
