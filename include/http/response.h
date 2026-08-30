@@ -19,8 +19,8 @@ typedef struct http_response {
     http_header *headers;
     size_t header_count;
 
-    char *body_buffer;
-    size_t body_buffer_size;
+    char *body;
+    size_t body_size;
 
 } http_response;
 

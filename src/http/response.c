@@ -14,11 +14,11 @@ void init_response(http_response *response) {
         log_errno(LOG_ERROR, "calloc");
     }
     response->header_count = 0;
-    response->body_buffer = malloc(sizeof(char) * 64);
-    if (!response->body_buffer) {
+    response->body = malloc(sizeof(char) * 64);
+    if (!response->body) {
         log_errno(LOG_ERROR, "malloc");
     }
-    response->body_buffer_size = 0;
+    response->body_size = 0;
 }
 
 void destroy_response(http_response *response) {
