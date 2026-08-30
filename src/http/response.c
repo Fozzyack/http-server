@@ -9,7 +9,7 @@ void init_response(http_response *response) {
     printf("init res structure\n");
     response->status = 0;
     memset(response->status_response, '\0', STATUS_RESPOSNE_LENGTH);
-    response->headers = calloc(10, sizeof(http_header));
+    response->headers = calloc(1, sizeof(http_header));
     if (!response->headers) {
         log_errno(LOG_ERROR, "calloc");
     }
