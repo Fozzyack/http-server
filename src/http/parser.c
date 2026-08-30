@@ -7,6 +7,9 @@
 
 parse_status read_from_socket(int socket_fd, http_request_buffer *req_buffer) {
     size_t emtpy_space = BUFFER_SIZE - 1 - req_buffer->end;
+    if (emtpy_space == 0) {
+        return PARSE_READ_BUFFER_FULL;
+    }
     ssize_t bytes_read = read(socket_fd, req_buffer->buffer + req_buffer->end, emtpy_space);
     if (bytes_read < 0) {
         log_errno(LOG_ERROR, "read");
@@ -100,6 +103,9 @@ parse_status parse_request_line(http_request *request, http_request_buffer *req_
 }
 
 parse_status parse_headers(http_request *request, http_request_buffer *req_buffer, size_t *eol) {
+    if (request->header_count >= MAX_HEADERS) {
+        return PARSE_HEADER_EXCEEDS_MAX_HEADERS;
+    }
     char *cursor = req_buffer->buffer;
     char *start = cursor;
     http_request_header header = {0};
@@ -157,7 +163,7 @@ parse_status parse_http_request(http_request *request, int client_fd) {
         if (status != PARSE_LINE_NOT_FOUND) {
             // logic here
             if (!has_req_line) {
-                if ((status = parse_request_line(request, &req_buffer, &eol) == PARSE_OK)) {
+                if ((status = parse_request_line(request, &req_buffer, &eol)) == PARSE_OK) {
                     has_req_line = 1;
                 } else {
                     return status;
