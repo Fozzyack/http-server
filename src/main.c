@@ -26,7 +26,7 @@ void test_http_res(void) {
     init_response(&res);
     response_set_header("Content-Type", "application/json", &res);
     response_set_header("Content-Length", "32", &res);
-    response_set_header("Connection", "die", &res);
+    response_set_header("Connection", "terminate-immediately", &res);
     response_set_header("Connection", "keep-alive", &res);
     for (size_t i = 0; i < res.header_count; i++) {
         log_message(LOG_INFO, "%s: %s", res.headers[i].name, res.headers[i].value);
