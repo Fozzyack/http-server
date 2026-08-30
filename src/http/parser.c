@@ -122,8 +122,9 @@ parse_status parse_headers(http_request *request, http_request_buffer *req_buffe
     memcpy(header.name, start, length);
     header.name[length] = '\0';
 
-    cursor += 2;    // skips the ': '
-    start = cursor; // reset start
+    cursor++;
+    if (*cursor == ' ') cursor++;
+    start = cursor;
 
     while (*cursor != '\r' && *cursor != '\n') {
         cursor++;
