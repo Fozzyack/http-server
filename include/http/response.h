@@ -14,7 +14,7 @@ typedef enum http_response_status {
 typedef struct http_response {
 
     int status;
-    int status_response[STATUS_RESPOSNE_LENGTH];
+    char status_response[STATUS_RESPOSNE_LENGTH];
 
     http_header *headers;
     size_t header_count;
@@ -23,5 +23,9 @@ typedef struct http_response {
     size_t body_buffer_size;
 
 } http_response;
+
+http_response_status response_set_header(const char *key, const char *value, http_response *response);
+void destroy_response(http_response *response);
+void init_response(http_response *response);
 
 #endif // !RESPONSE_H

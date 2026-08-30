@@ -1,4 +1,5 @@
 #include "http/parser.h"
+#include "http/response.h"
 #include "log/log.h"
 #include "server/server.h"
 #include <stddef.h>
@@ -20,6 +21,19 @@ void handle_client(int client_fd) {
     }
 }
 
+void test_http_res(void) {
+    http_response res = {0};
+    init_response(&res);
+    response_set_header("Content-Type", "application/json", &res);
+    response_set_header("Content-Length", "32", &res);
+    response_set_header("Connection", "die", &res);
+    response_set_header("Connection", "keep-alive", &res);
+    for (size_t i = 0; i < res.header_count; i++) {
+        log_message(LOG_INFO, "%s: %s", res.headers[i].name, res.headers[i].value);
+    }
+    destroy_response(&res);
+}
+
 int main(void) {
 
     tcp_server_info server_info = {0};
@@ -37,8 +51,8 @@ int main(void) {
     }
 
     handle_client(client_fd);
+    test_http_res();
     close(client_fd);
-
     close(server_info.socket_fd);
 
     return EXIT_SUCCESS;
