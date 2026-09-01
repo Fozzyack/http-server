@@ -3,7 +3,6 @@
 #include "log/log.h"
 #include "server/server.h"
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -14,11 +13,6 @@ void handle_client(int client_fd) {
         log_message(LOG_ERROR, "huh %d", status);
         return;
     }
-
-    // log_message(LOG_INFO, "%s %s %s", req.method, req.path, req.protocol);
-    // for (size_t i = 0; i < req.header_count; i++) {
-    //     log_message(LOG_INFO, "%s: %s", req.headers[i].name, req.headers[i].value);
-    // }
 }
 
 void test_http_res(int client_fd) {
@@ -29,13 +23,6 @@ void test_http_res(int client_fd) {
     response_set_header("Connection", "keep-alive", &res);
     const char *json = "{\"message\":\"hello\"}";
     response_set_json(json, &res);
-    // for (size_t i = 0; i < res.header_count; i++) {
-    //     log_message(LOG_INFO, "%s: %s", res.headers[i].name, res.headers[i].value);
-    // }
-    // for (size_t i = 0; i < res.body_size; i++) {
-    //     putc(res.body[i], stderr);
-    // }
-    // putc('\n', stderr);
     send_response(client_fd, &res);
     destroy_response(&res);
 }
