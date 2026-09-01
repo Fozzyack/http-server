@@ -21,7 +21,7 @@ void test_http_res(int client_fd) {
     response_set_header("Content-Type", "application/json", &res);
     response_set_header("Content-Length", "32", &res);
     response_set_header("Connection", "keep-alive", &res);
-    const char *json = "{\"message\":\"hello\"}";
+    const char *json = "{\"message\":\"hello\",\"what\":{\"is\":\"going on\"}}";
     response_set_json(json, &res);
     send_response(client_fd, &res);
     destroy_response(&res);
