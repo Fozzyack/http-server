@@ -37,9 +37,6 @@ clean-all:
 	rm -rf bin/
 	rm -rf obj/
 
-$(DEBUG): $(DEBUG_OBJ)
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -g -O0 -o $@ $^
 
 $(TARGET): $(OBJ)
 	@mkdir -p $(dir $@)
@@ -48,6 +45,10 @@ $(TARGET): $(OBJ)
 obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(DEBUG): $(DEBUG_OBJ)
+	@mkdir -p $(dir $@)
+	$(CC) $(DEBUG_FLAGS) -o $@ $^
 
 obj/debug/%.o: src/%.c
 	@mkdir -p $(dir $@)
