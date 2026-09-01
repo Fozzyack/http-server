@@ -58,13 +58,13 @@ http_response_status response_set_json(const char *json_string, http_response *r
     sprintf(length_str, "%zu", length);
 
     response->body_size = length;
-    response->body = calloc(length, sizeof(char));
+    response->body = malloc(length + 1);
     if (!response->body) {
         log_errno(LOG_ERROR, "malloc");
     }
     response_set_header("Content-Type", "application/json", response);
     response_set_header("Content-Length", length_str, response);
-    memcpy(response->body, json_string, length);
+    memcpy(response->body, json_string, length + 1);
     response->body[length + 1] = '\0';
 
     return RESPONSE_OK;
