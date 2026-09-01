@@ -15,11 +15,10 @@ void handle_client(int client_fd) {
         return;
     }
 
-    log_message(LOG_INFO, "%s %s %s", req.method, req.path, req.protocol);
-
-    for (size_t i = 0; i < req.header_count; i++) {
-        log_message(LOG_INFO, "%s: %s", req.headers[i].name, req.headers[i].value);
-    }
+    // log_message(LOG_INFO, "%s %s %s", req.method, req.path, req.protocol);
+    // for (size_t i = 0; i < req.header_count; i++) {
+    //     log_message(LOG_INFO, "%s: %s", req.headers[i].name, req.headers[i].value);
+    // }
 }
 
 void test_http_res(int client_fd) {

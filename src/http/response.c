@@ -8,7 +8,6 @@
 #include <sys/socket.h>
 
 void init_response(http_response *response) {
-    printf("init res structure\n");
     response->status = 200;
     memset(response->status_response, 0, STATUS_RESPOSNE_LENGTH);
     response->status_response[0] = 'O';
@@ -20,7 +19,6 @@ void init_response(http_response *response) {
 }
 
 void destroy_response(http_response *response) {
-    printf("destroying  response\n");
     free(response->headers);
     free(response->body);
 }
