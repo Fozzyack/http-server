@@ -35,18 +35,17 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    log_message(LOG_INFO, "Server started on port %d", 8080);
-
-    int client_fd;
-    server_status = accept_client(server_info.socket_fd, &client_fd);
-    if (server_status != SERVER_OK) {
-        return EXIT_FAILURE;
+    while (1) {
+        int client_fd;
+        server_status = accept_client(server_info.socket_fd, &client_fd);
+        if (server_status == SERVER_ACCEPT_ERROR) {
+            log_message(LOG_ERROR, "Failed to accept client");
+            return EXIT_FAILURE;
+        }
+        test_http_res(client_fd);
+        close(client_fd);
     }
 
-    handle_client(client_fd);
-    test_http_res(client_fd);
-    close(client_fd);
     close(server_info.socket_fd);
-
     return EXIT_SUCCESS;
 }
