@@ -30,13 +30,13 @@ void test_http_res(int client_fd) {
     response_set_header("Connection", "keep-alive", &res);
     const char *json = "{\"message\":\"hello\"}";
     response_set_json(json, &res);
-    for (size_t i = 0; i < res.header_count; i++) {
-        log_message(LOG_INFO, "%s: %s", res.headers[i].name, res.headers[i].value);
-    }
-    for (size_t i = 0; i < res.body_size; i++) {
-        putc(res.body[i], stderr);
-    }
-    putc('\n', stderr);
+    // for (size_t i = 0; i < res.header_count; i++) {
+    //     log_message(LOG_INFO, "%s: %s", res.headers[i].name, res.headers[i].value);
+    // }
+    // for (size_t i = 0; i < res.body_size; i++) {
+    //     putc(res.body[i], stderr);
+    // }
+    // putc('\n', stderr);
     send_response(client_fd, &res);
     destroy_response(&res);
 }
