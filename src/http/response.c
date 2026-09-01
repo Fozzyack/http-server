@@ -69,7 +69,7 @@ http_response_status response_set_json(const char *json_string, http_response *r
     response_set_header("Content-Type", "application/json", response);
     response_set_header("Content-Length", length_str, response);
     memcpy(response->body, json_string, length + 1);
-    response->body[length + 1] = '\0';
+    response->body[length] = '\0';
 
     return RESPONSE_OK;
 }
@@ -84,7 +84,8 @@ char *construct_response(const http_response *response, size_t *response_length)
 
     size_t offset = snprintf(buffer, buffer_size, "HTTP/1.1 %d %s\r\n", response->status, response->status_response);
     for (size_t i = 0; i < response->header_count; i++) {
-        size_t header_length = snprintf(NULL, "%s: %s\r\n", response->headers[i].name, response->headers[i].value);
+        size_t header_length =
+            (size_t)snprintf(NULL, 0, "%s: %s\r\n", response->headers[i].name, response->headers[i].value);
         while (offset + header_length + 1 > buffer_size) {
             buffer_size *= 2;
             buffer = realloc(buffer, buffer_size);
@@ -105,9 +106,9 @@ char *construct_response(const http_response *response, size_t *response_length)
                 log_errno(LOG_ERROR, "Failed to malloc for buffer");
                 return NULL;
             }
-            memcpy(buffer + offset, response->body, response->body_size);
-            offset += response->body_size;
         }
+        memcpy(buffer + offset, response->body, response->body_size);
+        offset += response->body_size;
     }
     *response_length = offset;
     return buffer;
@@ -127,4 +128,6 @@ http_response_status send_response(int client_fd, http_response *response) {
 
         bytes_sent += (size_t)b_sent;
     }
+    free(response_data);
+    return RESPONSE_OK;
 }

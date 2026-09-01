@@ -22,12 +22,11 @@ void handle_client(int client_fd) {
     }
 }
 
-void test_http_res(void) {
+void test_http_res(int client_fd) {
     http_response res = {0};
     init_response(&res);
     response_set_header("Content-Type", "application/json", &res);
     response_set_header("Content-Length", "32", &res);
-    response_set_header("Connection", "terminate-immediately", &res);
     response_set_header("Connection", "keep-alive", &res);
     const char *json = "{\"message\":\"hello\"}";
     response_set_json(json, &res);
@@ -38,6 +37,7 @@ void test_http_res(void) {
         putc(res.body[i], stderr);
     }
     putc('\n', stderr);
+    send_response(client_fd, &res);
     destroy_response(&res);
 }
 
@@ -58,7 +58,7 @@ int main(void) {
     }
 
     handle_client(client_fd);
-    test_http_res();
+    test_http_res(client_fd);
     close(client_fd);
     close(server_info.socket_fd);
 
