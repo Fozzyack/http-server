@@ -1,6 +1,7 @@
 #include "http/response.h"
 #include "http/parser.h"
 #include "log/log.h"
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,14 +11,8 @@ void init_response(http_response *response) {
     response->status = 200;
     memset(response->status_response, '\0', STATUS_RESPOSNE_LENGTH);
     response->headers = NULL;
-    if (!response->headers) {
-        log_errno(LOG_ERROR, "calloc");
-    }
     response->header_count = 0;
     response->body = NULL;
-    if (!response->body) {
-        log_errno(LOG_ERROR, "malloc");
-    }
     response->body_size = 0;
 }
 
@@ -46,6 +41,31 @@ http_response_status response_set_header(const char *key, const char *value, htt
     strcpy(response->headers[response->header_count].name, key);
     strcpy(response->headers[response->header_count].value, value);
     response->header_count++;
+
+    return RESPONSE_OK;
+}
+
+http_response_status response_set_json(const char *json_string, http_response *response) {
+
+    char *cursor = (char *)json_string;
+    char *start = cursor;
+    while (*cursor != '\0') {
+        cursor++;
+    }
+
+    size_t length = (size_t)(cursor - start);
+    char length_str[4096];
+    sprintf(length_str, "%zu", length);
+
+    response->body_size = length;
+    response->body = calloc(length, sizeof(char));
+    if (!response->body) {
+        log_errno(LOG_ERROR, "malloc");
+    }
+    response_set_header("Content-Type", "application/json", response);
+    response_set_header("Content-Length", length_str, response);
+    memcpy(response->body, json_string, length);
+    response->body[length + 1] = '\0';
 
     return RESPONSE_OK;
 }

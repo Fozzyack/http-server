@@ -3,6 +3,7 @@
 #include "log/log.h"
 #include "server/server.h"
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -28,9 +29,15 @@ void test_http_res(void) {
     response_set_header("Content-Length", "32", &res);
     response_set_header("Connection", "terminate-immediately", &res);
     response_set_header("Connection", "keep-alive", &res);
+    const char *json = "{\"message\":\"hello\"}";
+    response_set_json(json, &res);
     for (size_t i = 0; i < res.header_count; i++) {
         log_message(LOG_INFO, "%s: %s", res.headers[i].name, res.headers[i].value);
     }
+    for (size_t i = 0; i < res.body_size; i++) {
+        putc(res.body[i], stderr);
+    }
+    putc('\n', stderr);
     destroy_response(&res);
 }
 

@@ -15,6 +15,9 @@ DEPS = $(OBJ:.o=.d)
 
 default: $(TARGET)
 
+run: $(TARGET)
+	./$(TARGET)
+
 debug: $(DEBUG)
 
 $(DEBUG): $(OBJ)
