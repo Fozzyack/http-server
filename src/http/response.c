@@ -61,6 +61,7 @@ http_response_status response_set_json(const char *json_string, http_response *r
     response->body = malloc(length + 1);
     if (!response->body) {
         log_errno(LOG_ERROR, "malloc");
+        return RESPONSE_ERROR;
     }
     response_set_header("Content-Type", "application/json", response);
     response_set_header("Content-Length", length_str, response);
