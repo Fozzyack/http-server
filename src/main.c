@@ -5,6 +5,7 @@
 #include "threadpool/threadpool.h"
 #include <pthread.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -29,6 +30,12 @@ void test_http_res(int client_fd) {
     destroy_response(&res);
 }
 
+void test_thread_fn(void *args) {
+    (void)args;
+    fprintf(stderr, "THREAD TEST\n");
+    return;
+}
+
 int main(void) {
 
     tcp_server_info server_info = {0};
@@ -49,8 +56,13 @@ int main(void) {
     // }
     threadpool t_pool = {0};
     threadpool_start(&t_pool);
+    for (int i = 0; i < 20; i++) {
+        threadpool_enqueue_task(test_thread_fn, NULL, &t_pool);
+    }
+    log_message(LOG_DEBUG, "%zu %zu", t_pool.start, t_pool.end);
+    sleep(5);
+    log_message(LOG_DEBUG, "%zu %zu", t_pool.start, t_pool.end);
     threadpool_stop(&t_pool);
-
     close(server_info.socket_fd);
     return EXIT_SUCCESS;
 }

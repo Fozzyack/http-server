@@ -22,26 +22,27 @@ void *thread_target(void *args) {
     threadpool *t_pool = (threadpool *)args;
     while (1) {
         pthread_mutex_lock(&t_pool->lock);
-        if (t_pool->start == t_pool->end) {
+        while (!t_pool->pool_stop && t_pool->queue_count == 0) {
             pthread_cond_wait(&t_pool->condition, &t_pool->lock);
         }
 
-        if (t_pool->pool_stop && t_pool->start == t_pool->end) {
+        if (t_pool->pool_stop) {
             pthread_mutex_unlock(&t_pool->lock);
             break;
         }
+
         threadpool_task task = t_pool->task_queue[t_pool->start];
         t_pool->start = t_pool->start + 1 % QUEUE_SIZE;
-
+        t_pool->queue_count--;
         pthread_mutex_unlock(&t_pool->lock);
-        ((task.fn)(task.args));
+        (*(task.fn))(task.args);
     }
     return NULL;
 }
 
-threadpool_status threadpool_enqueue_task(void *(*fn)(void *), void *args, threadpool *t_pool) {
+threadpool_status threadpool_enqueue_task(void (*fn)(void *), void *args, threadpool *t_pool) {
 
-    if (t_pool->end == t_pool->start) {
+    if (t_pool->queue_count == QUEUE_SIZE) {
         log_message(LOG_ERROR, "cannot enqueue task queue is full");
         return THREADPOOL_TASK_QUEUE_FULL;
     }
@@ -53,6 +54,7 @@ threadpool_status threadpool_enqueue_task(void *(*fn)(void *), void *args, threa
 
     t_pool->task_queue[t_pool->end] = enqueue_task;
     t_pool->end = t_pool->end + 1 % QUEUE_SIZE;
+    t_pool->queue_count++;
 
     return THREADPOOL_OK;
 }
@@ -69,6 +71,7 @@ threadpool_status threadpool_start(threadpool *t_pool) {
 }
 
 threadpool_status threadpool_stop(threadpool *t_pool) {
+    t_pool->pool_stop = 1;
     for (int i = 0; i < THREAD_COUNT; i++) {
         pthread_join(t_pool->threads[i], NULL);
     }
