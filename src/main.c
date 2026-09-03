@@ -31,8 +31,10 @@ void test_http_res(int client_fd) {
 }
 
 void test_thread_fn(void *args) {
-    (void)args;
-    fprintf(stderr, "THREAD TEST\n");
+    sleep(1);
+    threadpool *t_pool = (threadpool *)args;
+    fprintf(stderr, "Stop flag - %d\n", t_pool->pool_stop);
+    fprintf(stderr, "queue size %zu\n", t_pool->queue_count);
     return;
 }
 
@@ -57,11 +59,9 @@ int main(void) {
     threadpool t_pool = {0};
     threadpool_start(&t_pool);
     for (int i = 0; i < 20; i++) {
-        threadpool_enqueue_task(test_thread_fn, NULL, &t_pool);
+        threadpool_enqueue_task(test_thread_fn, &t_pool, &t_pool);
     }
-    log_message(LOG_DEBUG, "%zu %zu", t_pool.start, t_pool.end);
-    sleep(5);
-    log_message(LOG_DEBUG, "%zu %zu", t_pool.start, t_pool.end);
+    sleep(21);
     threadpool_stop(&t_pool);
     close(server_info.socket_fd);
     return EXIT_SUCCESS;

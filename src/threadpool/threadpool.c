@@ -22,13 +22,13 @@ void *thread_target(void *args) {
     threadpool *t_pool = (threadpool *)args;
     while (1) {
         pthread_mutex_lock(&t_pool->lock);
-        while (!t_pool->pool_stop && t_pool->queue_count == 0) {
+        while (t_pool->queue_count == 0 && !t_pool->pool_stop) {
             pthread_cond_wait(&t_pool->condition, &t_pool->lock);
         }
 
         if (t_pool->pool_stop) {
             pthread_mutex_unlock(&t_pool->lock);
-            break;
+            pthread_exit(NULL);
         }
 
         threadpool_task task = t_pool->task_queue[t_pool->start];
@@ -71,8 +71,14 @@ threadpool_status threadpool_start(threadpool *t_pool) {
 }
 
 threadpool_status threadpool_stop(threadpool *t_pool) {
+
+    pthread_mutex_lock(&t_pool->lock);
     t_pool->pool_stop = 1;
+    pthread_cond_broadcast(&t_pool->condition);
+    pthread_mutex_unlock(&t_pool->lock);
+
     for (int i = 0; i < THREAD_COUNT; i++) {
+        fprintf(stderr, "exiting thread\n");
         pthread_join(t_pool->threads[i], NULL);
     }
     pthread_mutex_destroy(&(t_pool->lock));
