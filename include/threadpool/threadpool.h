@@ -7,6 +7,11 @@
 #define THREAD_COUNT 10
 #define QUEUE_SIZE 100
 
+typedef enum {
+    THREADPOOL_OK,
+    THREADPOOL_ERROR,
+} threadpool_status;
+
 typedef struct task {
     void (*fn)(void *);
     void *args;
