@@ -58,6 +58,7 @@ int main(void) {
     // }
     threadpool t_pool = {0};
     threadpool_start(&t_pool);
+    sleep(5);
     for (int i = 0; i < 20; i++) {
         threadpool_enqueue_task(test_thread_fn, &t_pool, &t_pool);
     }
