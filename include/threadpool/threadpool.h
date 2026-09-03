@@ -13,10 +13,10 @@ typedef enum {
     THREADPOOL_TASK_QUEUE_FULL,
 } threadpool_status;
 
-typedef struct task {
+typedef struct threadpool_task {
     void *(*fn)(void *);
     void *args;
-} task;
+} threadpool_task;
 
 typedef struct threadpool {
 
@@ -25,7 +25,7 @@ typedef struct threadpool {
     pthread_t threads[THREAD_COUNT];
     int pool_stop;
 
-    task task_queue[QUEUE_SIZE];
+    threadpool_task task_queue[QUEUE_SIZE];
     size_t start;
     size_t end;
 

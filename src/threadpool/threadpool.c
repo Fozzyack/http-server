@@ -19,8 +19,23 @@ threadpool_status threadpool_init(threadpool *t_pool) {
 }
 
 void *thread_target(void *args) {
-    (void)args;
-    fprintf(stderr, "Thread running\n");
+    threadpool *t_pool = (threadpool *)args;
+    while (1) {
+        pthread_mutex_lock(&t_pool->lock);
+        if (t_pool->start == t_pool->end) {
+            pthread_cond_wait(&t_pool->condition, &t_pool->lock);
+        }
+
+        if (t_pool->pool_stop && t_pool->start == t_pool->end) {
+            pthread_mutex_unlock(&t_pool->lock);
+            break;
+        }
+        threadpool_task task = t_pool->task_queue[t_pool->start];
+        t_pool->start = t_pool->start + 1 % QUEUE_SIZE;
+
+        pthread_mutex_unlock(&t_pool->lock);
+        ((task.fn)(task.args));
+    }
     return NULL;
 }
 
@@ -31,13 +46,13 @@ threadpool_status threadpool_enqueue_task(void *(*fn)(void *), void *args, threa
         return THREADPOOL_TASK_QUEUE_FULL;
     }
 
-    task enqueue_task = {
+    threadpool_task enqueue_task = {
         .fn = fn,
         .args = args,
     };
 
     t_pool->task_queue[t_pool->end] = enqueue_task;
-    t_pool->end += 1;
+    t_pool->end = t_pool->end + 1 % QUEUE_SIZE;
 
     return THREADPOOL_OK;
 }
@@ -48,7 +63,7 @@ threadpool_status threadpool_start(threadpool *t_pool) {
         return THREADPOOL_ERROR;
     }
     for (size_t i = 0; i < THREAD_COUNT; i++) {
-        pthread_create(&(t_pool->threads[i]), NULL, thread_target, NULL);
+        pthread_create(&(t_pool->threads[i]), NULL, thread_target, t_pool);
     }
     return THREADPOOL_OK;
 }
