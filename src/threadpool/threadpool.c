@@ -26,11 +26,12 @@ void *thread_target(void *args) {
 
 threadpool_status threadpool_enqueue_task(void *(*fn)(void *), void *args, threadpool *t_pool) {
 
-    size_t idx = (t_pool->end + 1) % QUEUE_SIZE;
-    if (idx == t_pool->start) {
+    if (t_pool->end == t_pool->start) {
         log_message(LOG_ERROR, "cannot enqueue task queue is full");
         return THREADPOOL_TASK_QUEUE_FULL;
     }
+
+    size_t idx = (t_pool->end + 1) % QUEUE_SIZE;
 
     task enqueue_task = {
         .fn = fn,
