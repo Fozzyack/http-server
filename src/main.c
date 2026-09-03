@@ -48,12 +48,8 @@ int main(void) {
     //     close(client_fd);
     // }
     threadpool t_pool = {0};
-    start_threadpool(&t_pool);
-    for (size_t i = 0; i < THREAD_COUNT; i++) {
-        pthread_join(t_pool.threads[i], NULL);
-    }
-    pthread_mutex_destroy(&t_pool.lock);
-    pthread_cond_destroy(&t_pool.condition);
+    threadpool_start(&t_pool);
+    threadpool_stop(&t_pool);
 
     close(server_info.socket_fd);
     return EXIT_SUCCESS;

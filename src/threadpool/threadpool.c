@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-threadpool_status init_threadpool(threadpool *t_pool) {
+threadpool_status threadpool_init(threadpool *t_pool) {
     pthread_mutex_init(&(t_pool->lock), NULL);
     int status = pthread_cond_init(&(t_pool->condition), NULL);
     if (status != 0) {
@@ -24,8 +24,35 @@ void *thread_target(void *args) {
     return NULL;
 }
 
-threadpool_status start_threadpool(threadpool *t_pool) {
-    threadpool_status status = init_threadpool(t_pool);
+threadpool_status threadpool_enqueue_task(void *(*fn)(void *), void *args, threadpool *t_pool) {
+
+    size_t idx = (t_pool->end + 1) % QUEUE_SIZE;
+    if (idx == t_pool->start) {
+        log_message(LOG_ERROR, "cannot enqueue task queue is full");
+        return THREADPOOL_TASK_QUEUE_FULL;
+    }
+
+    task enqueue_task = {
+        .fn = fn,
+        .args = args,
+    };
+
+    t_pool->task_queue[t_pool->end] = enqueue_task;
+
+    return THREADPOOL_OK;
+}
+
+threadpool_status threadpool_stop(threadpool *t_pool) {
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        pthread_join(t_pool->threads[i], NULL);
+    }
+    pthread_mutex_destroy(&(t_pool->lock));
+    pthread_cond_destroy(&(t_pool->condition));
+    return THREADPOOL_OK;
+}
+
+threadpool_status threadpool_start(threadpool *t_pool) {
+    threadpool_status status = threadpool_init(t_pool);
     if (status == THREADPOOL_ERROR) {
         return THREADPOOL_ERROR;
     }

@@ -10,10 +10,11 @@
 typedef enum {
     THREADPOOL_OK,
     THREADPOOL_ERROR,
+    THREADPOOL_TASK_QUEUE_FULL,
 } threadpool_status;
 
 typedef struct task {
-    void (*fn)(void *);
+    void *(*fn)(void *);
     void *args;
 } task;
 
@@ -30,6 +31,6 @@ typedef struct threadpool {
 
 } threadpool;
 
-threadpool_status start_threadpool(threadpool *t_pool);
+threadpool_status threadpool_start(threadpool *t_pool);
 
 #endif // !THREADPOOL_H
