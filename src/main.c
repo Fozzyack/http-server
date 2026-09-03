@@ -2,6 +2,8 @@
 #include "http/response.h"
 #include "log/log.h"
 #include "server/server.h"
+#include "threadpool/threadpool.h"
+#include <pthread.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,16 +37,23 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    while (1) {
-        int client_fd;
-        server_status = accept_client(server_info.socket_fd, &client_fd);
-        if (server_status == SERVER_ACCEPT_ERROR) {
-            log_message(LOG_ERROR, "Failed to accept client");
-            return EXIT_FAILURE;
-        }
-        test_http_res(client_fd);
-        close(client_fd);
+    // while (1) {
+    //     int client_fd;
+    //     server_status = accept_client(server_info.socket_fd, &client_fd);
+    //     if (server_status == SERVER_ACCEPT_ERROR) {
+    //         log_message(LOG_ERROR, "Failed to accept client");
+    //         return EXIT_FAILURE;
+    //     }
+    //     test_http_res(client_fd);
+    //     close(client_fd);
+    // }
+    threadpool t_pool = {0};
+    start_threadpool(&t_pool);
+    for (size_t i = 0; i < THREAD_COUNT; i++) {
+        pthread_join(t_pool.threads[i], NULL);
     }
+    pthread_mutex_destroy(&t_pool.lock);
+    pthread_cond_destroy(&t_pool.condition);
 
     close(server_info.socket_fd);
     return EXIT_SUCCESS;
