@@ -30,4 +30,6 @@ typedef struct threadpool {
 
 } threadpool;
 
+threadpool_status start_threadpool(threadpool *t_pool);
+
 #endif // !THREADPOOL_H
