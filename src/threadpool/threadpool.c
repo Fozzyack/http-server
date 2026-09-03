@@ -31,14 +31,13 @@ threadpool_status threadpool_enqueue_task(void *(*fn)(void *), void *args, threa
         return THREADPOOL_TASK_QUEUE_FULL;
     }
 
-    size_t idx = (t_pool->end + 1) % QUEUE_SIZE;
-
     task enqueue_task = {
         .fn = fn,
         .args = args,
     };
 
     t_pool->task_queue[t_pool->end] = enqueue_task;
+    t_pool->end += 1;
 
     return THREADPOOL_OK;
 }
