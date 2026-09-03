@@ -32,5 +32,7 @@ typedef struct threadpool {
 } threadpool;
 
 threadpool_status threadpool_start(threadpool *t_pool);
+threadpool_status threadpool_stop(threadpool *t_pool);
+threadpool_status threadpool_enqueue_task(void *(*fn)(void *), void *args, threadpool *t_pool);
 
 #endif // !THREADPOOL_H

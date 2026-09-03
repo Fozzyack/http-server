@@ -42,15 +42,6 @@ threadpool_status threadpool_enqueue_task(void *(*fn)(void *), void *args, threa
     return THREADPOOL_OK;
 }
 
-threadpool_status threadpool_stop(threadpool *t_pool) {
-    for (int i = 0; i < THREAD_COUNT; i++) {
-        pthread_join(t_pool->threads[i], NULL);
-    }
-    pthread_mutex_destroy(&(t_pool->lock));
-    pthread_cond_destroy(&(t_pool->condition));
-    return THREADPOOL_OK;
-}
-
 threadpool_status threadpool_start(threadpool *t_pool) {
     threadpool_status status = threadpool_init(t_pool);
     if (status == THREADPOOL_ERROR) {
@@ -59,5 +50,14 @@ threadpool_status threadpool_start(threadpool *t_pool) {
     for (size_t i = 0; i < THREAD_COUNT; i++) {
         pthread_create(&(t_pool->threads[i]), NULL, thread_target, NULL);
     }
+    return THREADPOOL_OK;
+}
+
+threadpool_status threadpool_stop(threadpool *t_pool) {
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        pthread_join(t_pool->threads[i], NULL);
+    }
+    pthread_mutex_destroy(&(t_pool->lock));
+    pthread_cond_destroy(&(t_pool->condition));
     return THREADPOOL_OK;
 }
