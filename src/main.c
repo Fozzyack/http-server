@@ -45,24 +45,6 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    // while (1) {
-    //     int client_fd;
-    //     server_status = accept_client(server_info.socket_fd, &client_fd);
-    //     if (server_status == SERVER_ACCEPT_ERROR) {
-    //         log_message(LOG_ERROR, "Failed to accept client");
-    //         return EXIT_FAILURE;
-    //     }
-    //     test_http_res(client_fd);
-    //     close(client_fd);
-    // }
-    threadpool t_pool = {0};
-    threadpool_start(&t_pool);
-    sleep(1);
-    for (int i = 0; i < 20; i++) {
-        threadpool_enqueue_task(test_thread_fn, NULL, &t_pool);
-    }
-    sleep(5);
-    threadpool_stop(&t_pool);
     close(server_info.socket_fd);
     return EXIT_SUCCESS;
 }
