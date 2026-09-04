@@ -1,5 +1,4 @@
-#include "http/response.h"
-#include "http/parser.h"
+#include "http/http.h"
 #include "log/log.h"
 #include <stddef.h>
 #include <stdio.h>

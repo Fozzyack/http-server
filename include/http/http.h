@@ -1,5 +1,5 @@
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef HTTP_H
+#define HTTP_H
 
 #include <stddef.h>
 
@@ -12,6 +12,8 @@
 #define HEADER_VALUE_LENGTH 1024
 
 #define BUFFER_SIZE 8192
+
+#define STATUS_RESPOSNE_LENGTH 64
 
 typedef enum parse_status {
     PARSE_OK,
@@ -27,6 +29,11 @@ typedef enum parse_status {
     PARSE_READ_SOCKET_DISCONNECTED,
     PARSE_FIELD_TOO_BIG,
 } parse_status;
+
+typedef enum http_response_status {
+    RESPONSE_OK,
+    RESPONSE_ERROR,
+} http_response_status;
 
 typedef struct http_request_buffer {
     char buffer[BUFFER_SIZE];
@@ -48,6 +55,24 @@ typedef struct http_request {
     size_t header_count;
 } http_request;
 
-parse_status parse_http_request(http_request *request, int client_fd);
+typedef struct http_response {
 
-#endif // PARSER_H
+    int status;
+    char status_response[STATUS_RESPOSNE_LENGTH];
+
+    http_header *headers;
+    size_t header_count;
+
+    char *body;
+    size_t body_size;
+
+} http_response;
+
+parse_status parse_http_request(http_request *request, int client_fd);
+http_response_status response_set_header(const char *key, const char *value, http_response *response);
+http_response_status response_set_json(const char *json_string, http_response *response);
+http_response_status send_response(int client_fd, http_response *response);
+void destroy_response(http_response *response);
+void init_response(http_response *response);
+
+#endif // HTTP_H
