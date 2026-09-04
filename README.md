@@ -10,10 +10,12 @@ production-ready HTTP implementation.
 
 ## Status
 
-The main pieces currently exist, but they are not yet wired into one complete
-request/response server:
+The project currently has the individual building blocks of a server, but they
+are not yet wired into a complete request/response flow:
 
-- A TCP server can create, configure, bind, and listen on an IPv4 socket.
+- A TCP server creates, configures, binds, and listens on an IPv4 socket.
+- An epoll-based listener accepts connections and configures them as
+  non-blocking sockets.
 - An incremental, line-oriented HTTP request parser reads from a socket into a
   bounded buffer and parses the request line and headers.
 - HTTP responses can be built with a status, dynamically allocated headers,
@@ -22,21 +24,23 @@ request/response server:
   variable to coordinate worker threads.
 - A small logging module reports messages and `errno` values.
 
-The accept-and-handle loop in `src/main.c` is currently commented out. Parsed
-requests are not yet dispatched to handlers, and the executable currently
-serves as a thread-pool smoke test rather than a usable HTTP server. There is
-also no automated test suite yet.
+The listener currently closes client connections when they become readable;
+requests are not yet passed to the parser, dispatched to handlers, or answered
+with HTTP responses. The thread pool is implemented but is not currently used
+by the executable. There is also no automated test suite yet.
 
 ## Current Runtime Behavior
 
 Running the program currently:
 
 1. Binds an IPv4 TCP listener to `0.0.0.0:8080`.
-2. Starts 10 worker threads.
-3. Enqueues 20 sample tasks; each task sleeps briefly and prints `Hello`.
-4. Stops the pool and closes the listener.
+2. Creates an epoll instance and waits for the listener to become readable.
+3. Accepts incoming client connections and registers them with epoll as
+   non-blocking sockets.
+4. Closes a client connection when an event is received for it.
 
-It does not accept client connections or return HTTP responses yet.
+The program runs until it encounters an error or is stopped. It does not yet
+parse requests, start the thread pool, or return HTTP responses.
 
 ## Building
 
@@ -46,7 +50,8 @@ environment.
 ```sh
 make          # build bin/server.out
 make debug    # build debug/server.out with debug symbols and no optimization
-make run      # build and run the current smoke-test executable
+make all      # build both normal and debug executables
+make run      # build and run the server
 ```
 
 Build settings include GNU C17, strict compiler warnings treated as errors,
@@ -54,18 +59,22 @@ dependency generation, and `pthread` support. Generated object files,
 dependency files, and executables are ignored by Git.
 
 Available cleanup targets are `make clean`, `make clean-debug`, and
-`make clean-all`.
+`make clean-bin`.
 
 ## Project Layout
 
 | Path | Purpose |
 | --- | --- |
-| `src/server/` | TCP socket setup and client acceptance primitives |
+| `src/server/server.c` | TCP socket setup, binding, and listening |
+| `src/server/listener.c` | Epoll event loop, client acceptance, and non-blocking sockets |
 | `src/http/` | Request parsing and response construction |
 | `src/threadpool/` | Worker threads and the bounded task queue |
 | `src/log/` | Basic stderr logging helpers |
-| `src/main.c` | Executable entry point and current experiments |
-| `include/` | Public headers for each module |
+| `src/main.c` | Executable entry point |
+| `include/http/http.h` | HTTP request, response, and parser interfaces |
+| `include/server/` | TCP server and listener interfaces |
+| `include/threadpool/` | Thread-pool interface |
+| `include/log/` | Logging interface |
 | `Makefile` | Normal, debug, run, and cleanup targets |
 
 ## What This Project Explores
@@ -98,7 +107,8 @@ Available cleanup targets are `make clean`, `make clean-debug`, and
 
 Likely next steps include:
 
-- Restore the accept loop and enqueue client handling in the thread pool.
+- Read and parse client requests from the listener event loop.
+- Enqueue client handling in the thread pool.
 - Connect request parsing to routing and response generation.
 - Handle request bodies, `Content-Length`, connection lifetimes, and malformed
   input more completely.
