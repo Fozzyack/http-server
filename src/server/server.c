@@ -10,7 +10,6 @@
 #include <unistd.h>
 
 #define LISTEN_BACKLOG 25
-#define MAX_EVENTS 100
 
 tcp_server_status init_server(tcp_server_info *server_info, int port) {
 
