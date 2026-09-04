@@ -25,14 +25,16 @@ debug: $(DEBUG)
 
 -include $(DEPS)
 
-clean:
+all: $(TARGET) $(DEBUG)
+
+clean-bin:
 	rm -rf bin/
 	rm -rf obj/
 
 clean-debug:
 	rm -rf debug/
 
-clean-all:
+clean:
 	rm -rf debug/
 	rm -rf bin/
 	rm -rf obj/

@@ -11,6 +11,10 @@ int main(void) {
     if (server_status != SERVER_OK) {
         return EXIT_FAILURE;
     }
+    server_status = listen_and_accept(server_info.socket_fd);
+    if (server_status != SERVER_OK) {
+        return EXIT_FAILURE;
+    }
 
     close(server_info.socket_fd);
     return EXIT_SUCCESS;

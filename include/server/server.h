@@ -12,6 +12,7 @@ typedef enum {
     SERVER_SETSOCKOPT_ERROR,
     SERVER_BIND_ERROR,
     SERVER_ACCEPT_ERROR,
+    SERVER_EPOLL_ERROR,
 } tcp_server_status;
 
 typedef struct {
@@ -20,6 +21,6 @@ typedef struct {
 } tcp_server_info;
 
 tcp_server_status bind_tcp_server(tcp_server_info *server_info, int port);
-tcp_server_status accept_client(int server_fd, int *client_fd);
+tcp_server_status listen_and_accept(int server_fd);
 
 #endif // !SERVER_H
