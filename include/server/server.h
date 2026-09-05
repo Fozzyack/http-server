@@ -21,6 +21,6 @@ typedef struct {
 } tcp_server_info;
 
 tcp_server_status bind_tcp_server(tcp_server_info *server_info, int port);
-tcp_server_status listen_and_accept(int server_fd);
+int listen_and_accept(int server_fd);
 
 #endif // !SERVER_H
