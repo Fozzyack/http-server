@@ -119,7 +119,7 @@ int listen_and_accept(int server_fd) {
                     size_t eol = 0;
                     if (event_ptr->conn_state == NEW_CONNECTION) {
                         status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
-                        if (status == PARSE_READ_ERROR) {
+                        if (status == PARSE_READ_ERROR || status == PARSE_READ_SOCKET_DISCONNECTED) {
                             log_message(LOG_ERROR, "Failed to Read Response\n");
                             close_connection(epollfd, event_ptr);
                             conn_open = 0;
@@ -141,7 +141,7 @@ int listen_and_accept(int server_fd) {
                     }
                     if (event_ptr->conn_state == PARSED_REQUEST_LINE) {
                         status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
-                        if (status == PARSE_READ_ERROR) {
+                        if (status == PARSE_READ_ERROR || status == PARSE_READ_SOCKET_DISCONNECTED) {
                             conn_open = 0;
                             close_connection(epollfd, event_ptr);
                             break;
