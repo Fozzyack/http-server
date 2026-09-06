@@ -105,6 +105,8 @@ int listen_and_accept(int server_fd) {
                 // Parse HTTP request
                 // Perform Work
                 printf("Huh what is going on\n");
+                close(event_ptr->fd);
+                epoll_ctl(epollfd, EPOLL_CTL_DEL, event_ptr->fd, NULL);
             }
         }
     }
