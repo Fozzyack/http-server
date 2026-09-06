@@ -50,6 +50,13 @@ int setnonblocking(int fd) {
     return fcntl(fd, F_SETFL, flags, O_NONBLOCK);
 }
 
+int close_connection(int epollfd, connection *conn) {
+    close(conn->fd);
+    conn->conn_state = CONNECTION_DISCONNECTED;
+    epoll_ctl(epollfd, EPOLL_CTL_DEL, conn->fd, NULL);
+    return 0;
+}
+
 int listen_and_accept(int server_fd) {
 
     struct sockaddr_in client_info = {0};
@@ -103,10 +110,14 @@ int listen_and_accept(int server_fd) {
                 // (connection)
             } else {
                 // Parse HTTP request
+                // read here
+                // after read check for line
+                // if \r\n detected - parse line
+                // if empty \r\n deteced - we have read the line
+                // make sure to read to the buffer inside the pointer we passed to epoll
                 // Perform Work
                 printf("Huh what is going on\n");
-                close(event_ptr->fd);
-                epoll_ctl(epollfd, EPOLL_CTL_DEL, event_ptr->fd, NULL);
+                close_connection(epollfd, event_ptr);
             }
         }
     }
