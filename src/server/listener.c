@@ -82,6 +82,10 @@ int listen_and_accept(int server_fd) {
                     return -1;
                 }
                 connection *conn = malloc(sizeof(connection));
+                if (conn == NULL) {
+                    log_errno(LOG_ERROR, "malloc; could not create new conn");
+                    return -1;
+                }
                 conn->fd = conn_fd;
                 conn->conn_state = NEW_CONNECTION;
                 init_request_info(&(conn->request), &(conn->buffer));
