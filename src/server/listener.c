@@ -133,9 +133,39 @@ int listen_and_accept(int server_fd) {
                             event_ptr->conn_state = PARSED_REQUEST_LINE;
                         }
                     }
+                    if (event_ptr->conn_state == PARSED_REQUEST_LINE) {
+                        status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
+                        if (status == PARSE_READ_ERROR) {
+                            printf("Failed to Read Response\n");
+                            close_connection(epollfd, event_ptr);
+                            break;
+                        }
 
-                    log_message(LOG_INFO, "%s %s %s", event_ptr->request.method, event_ptr->request.path,
-                                event_ptr->request.protocol);
+                        while (event_ptr->conn_state != PARSED_HEADERS) {
+                            status = find_line(&event_ptr->buffer, &eol);
+                            if (status != PARSE_OK) {
+                                printf("No line found\n");
+                                break;
+                            }
+                            if (eol == 2) {
+                                event_ptr->conn_state = PARSED_HEADERS;
+                                break;
+                            }
+                            status = parse_header(&event_ptr->request, &event_ptr->buffer, &eol);
+                            if (status != PARSE_OK) {
+                                printf("Failed to Parse Request Line\n");
+                                close_connection(epollfd, event_ptr);
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                log_message(LOG_INFO, "%s %s %s", event_ptr->request.method, event_ptr->request.path,
+                            event_ptr->request.protocol);
+                for (size_t i = 0; i < event_ptr->request.header_count; i++) {
+                    log_message(LOG_INFO, "%s: %s", event_ptr->request.headers[i].name,
+                                event_ptr->request.headers[i].value);
                 }
                 close_connection(epollfd, event_ptr);
             }

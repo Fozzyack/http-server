@@ -73,6 +73,7 @@ void init_request_info(http_request *request, http_request_buffer *buffer);
 parse_status read_from_socket(int fd, http_request_buffer *req_buffer);
 parse_status find_line(http_request_buffer *req_buffer, size_t *eol);
 parse_status parse_request_line(http_request *request, http_request_buffer *req_buffer, size_t *eol);
+parse_status parse_header(http_request *request, http_request_buffer *req_buffer, size_t *eol);
 
 // request.c
 http_response_status response_set_header(const char *key, const char *value, http_response *response);
