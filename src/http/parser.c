@@ -10,18 +10,33 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+void init_request_info(http_request *request, http_request_buffer *buffer) {
+
+    memset(request->method, '\0', METHOD_LENGTH);
+    memset(request->path, '\0', REQUEST_TARGET_LENGTH);
+    memset(request->protocol, '\0', PROTOCOL_LENGTH);
+    memset(request->headers, 0, sizeof(http_header) * MAX_HEADERS);
+    request->header_count = 0;
+
+    memset(buffer, '\0', BUFFER_SIZE);
+    buffer->end = 0;
+    buffer->start = 0;
+}
+
 parse_status read_from_socket(int fd, http_request_buffer *req_buffer) {
-    size_t empty_space = BUFFER_SIZE - req_buffer->end - 1;
-    ssize_t bytes_read = 0;
-    while (bytes_read != -1) {
+    ssize_t bytes_read = 1;
+    while (bytes_read > 0) {
+        size_t empty_space = BUFFER_SIZE - req_buffer->end - 1;
         bytes_read = read(fd, req_buffer->buffer + req_buffer->end, empty_space);
         if (bytes_read == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            int err = errno;
+            if (err == EAGAIN || err == EWOULDBLOCK) {
                 return PARSE_OK;
             } else {
                 return PARSE_READ_ERROR;
             }
         }
+        req_buffer->end += bytes_read;
     }
     return PARSE_OK;
 }
@@ -49,7 +64,9 @@ parse_status find_line(http_request_buffer *req_buffer, size_t *eol) {
     for (size_t i = 1; i < req_buffer->end; i++) {
         if (req_buffer->buffer[i - 1] == '\r' && req_buffer->buffer[i] == '\n') {
             // we have detected a line
-            *eol = i + 1;
+            if (eol != NULL) {
+                *eol = i + 1;
+            }
             return PARSE_OK;
         }
     }
@@ -105,7 +122,7 @@ parse_status parse_request_line(http_request *request, http_request_buffer *req_
     return PARSE_OK;
 }
 
-parse_status parse_headers(http_request *request, http_request_buffer *req_buffer, size_t *eol) {
+parse_status parse_header(http_request *request, http_request_buffer *req_buffer, size_t *eol) {
     if (request->header_count >= MAX_HEADERS) {
         return PARSE_HEADER_EXCEEDS_MAX_HEADERS;
     }
@@ -146,17 +163,4 @@ parse_status parse_headers(http_request *request, http_request_buffer *req_buffe
     align_buffer(req_buffer);
 
     return PARSE_OK;
-}
-
-void init_request_info(http_request *request, http_request_buffer *buffer) {
-
-    memset(request->method, '\0', METHOD_LENGTH);
-    memset(request->path, '\0', REQUEST_TARGET_LENGTH);
-    memset(request->protocol, '\0', PROTOCOL_LENGTH);
-    memset(request->headers, 0, sizeof(http_header) * MAX_HEADERS);
-    request->header_count = 0;
-
-    memset(buffer, '\0', BUFFER_SIZE);
-    buffer->end = 0;
-    buffer->start = 0;
 }

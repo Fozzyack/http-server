@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -27,32 +28,18 @@ typedef struct connection {
     http_request_buffer buffer;
 } connection;
 
-int handle_http_request(int client_id) {
-    http_request req = {0};
-    if (parse_http_request(&req, client_id) != PARSE_OK) {
-        log_message(LOG_ERROR, "Failed to parse http request");
-        return -1;
-    }
-
-    log_message(LOG_INFO, "%s %s %s", req.method, req.path, req.protocol);
-    for (size_t i = 0; i < req.header_count; i++) {
-        log_message(LOG_INFO, "%s: %s", req.headers[i].name, req.headers[i].value);
-    }
-
-    return 0;
-}
-
 int setnonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL);
     if (flags == -1) {
         return -1;
     }
-    return fcntl(fd, F_SETFL, flags, O_NONBLOCK);
+    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
 int close_connection(int epollfd, connection *conn) {
     close(conn->fd);
     epoll_ctl(epollfd, EPOLL_CTL_DEL, conn->fd, NULL);
+    free(conn);
     return 0;
 }
 
@@ -94,11 +81,18 @@ int listen_and_accept(int server_fd) {
                     perror("accept");
                     return -1;
                 }
-                connection conn = {0};
-                conn.fd = conn_fd;
-                conn.conn_state = NEW_CONNECTION;
-                init_request_info(&conn.request, &conn.buffer);
-                ev.data.ptr = (connection *)&conn;
+                connection *conn = malloc(sizeof(connection));
+                conn->fd = conn_fd;
+                conn->conn_state = NEW_CONNECTION;
+                init_request_info(&(conn->request), &(conn->buffer));
+                if (setnonblocking(conn_fd) == -1) {
+                    perror("setnonblocking");
+                    close(conn_fd);
+                    free(conn);
+                    continue;
+                }
+
+                ev.data.ptr = (connection *)conn;
                 ev.events = EPOLLIN | EPOLLRDHUP; // Need to implement EPOLLET (non blocking)
                 if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_fd, &ev) == -1) {
                     perror("epoll_ctl; server_fd");
@@ -116,14 +110,33 @@ int listen_and_accept(int server_fd) {
                 // make sure to read to the buffer inside the pointer we passed to epoll
                 // Perform Work
                 parse_status status = -1;
-                if (event_ptr->conn_state == NEW_CONNECTION) {
-                    status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
-                    if (status == PARSE_READ_ERROR) {
-                        printf("Failed to Read Response\n");
-                        close_connection(epollfd, event_ptr);
+                for (;;) {
+                    size_t eol = 0;
+                    if (event_ptr->conn_state == NEW_CONNECTION) {
+                        status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
+                        if (status == PARSE_READ_ERROR) {
+                            printf("Failed to Read Response\n");
+                            close_connection(epollfd, event_ptr);
+                            break;
+                        }
+                        status = find_line(&event_ptr->buffer, &eol);
+                        if (status != PARSE_OK) {
+                            printf("No line found\n");
+                            break;
+                        }
+                        status = parse_request_line(&event_ptr->request, &event_ptr->buffer, &eol);
+                        if (status != PARSE_OK) {
+                            printf("Failed to Parse Request Line\n");
+                            close_connection(epollfd, event_ptr);
+                            break;
+                        } else {
+                            event_ptr->conn_state = PARSED_REQUEST_LINE;
+                        }
                     }
+
+                    log_message(LOG_INFO, "%s %s %s", event_ptr->request.method, event_ptr->request.path,
+                                event_ptr->request.protocol);
                 }
-                printf("Huh what is going on\n");
                 close_connection(epollfd, event_ptr);
             }
         }
