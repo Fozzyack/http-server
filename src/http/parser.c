@@ -35,8 +35,13 @@ parse_status read_from_socket(int fd, http_request_buffer *req_buffer) {
             int err = errno;
             if (err == EAGAIN || err == EWOULDBLOCK) {
                 return PARSE_OK;
-            } else {
-                return PARSE_READ_ERROR;
+            }
+            if (err == EINTR) {
+                continue;
+            }
+            return PARSE_READ_ERROR;
+            if (bytes_read == 0) {
+                return PARSE_READ_SOCKET_DISCONNECTED;
             }
         }
         req_buffer->end += bytes_read;
