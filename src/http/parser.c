@@ -27,6 +27,9 @@ parse_status read_from_socket(int fd, http_request_buffer *req_buffer) {
     ssize_t bytes_read = 1;
     while (bytes_read > 0) {
         size_t empty_space = BUFFER_SIZE - req_buffer->end - 1;
+        if (empty_space == 0) {
+            return PARSE_READ_BUFFER_FULL;
+        }
         bytes_read = read(fd, req_buffer->buffer + req_buffer->end, empty_space);
         if (bytes_read == -1) {
             int err = errno;
@@ -37,6 +40,7 @@ parse_status read_from_socket(int fd, http_request_buffer *req_buffer) {
             }
         }
         req_buffer->end += bytes_read;
+        req_buffer->buffer[req_buffer->end] = '\0';
     }
     return PARSE_OK;
 }
