@@ -12,19 +12,19 @@
 #define MAX_EVENTS 1000
 
 typedef enum {
-    CONNECTION_NEW,
-    CONNECTION_CONNECTED,
-    CONNECTION_DISCONNECTED,
+    NEW_CONNECTION,
+    PARSED_REQUEST_LINE,
+    PARSED_HEADERS,
+    PARSED_BODY,
+    WRITTEN_RESPONSE,
 } connection_status;
 
 typedef struct connection {
     int fd;
     int conn_state;
 
-    char buffer[BUFFER_SIZE];
-    size_t buffer_start;
-    size_t buffer_end;
-
+    http_request request;
+    http_request_buffer buffer;
 } connection;
 
 int handle_http_request(int client_id) {
@@ -52,7 +52,6 @@ int setnonblocking(int fd) {
 
 int close_connection(int epollfd, connection *conn) {
     close(conn->fd);
-    conn->conn_state = CONNECTION_DISCONNECTED;
     epoll_ctl(epollfd, EPOLL_CTL_DEL, conn->fd, NULL);
     return 0;
 }
@@ -66,7 +65,6 @@ int listen_and_accept(int server_fd) {
 
     connection server_conn = {0};
     server_conn.fd = server_fd;
-    server_conn.conn_state = CONNECTION_CONNECTED;
     ev.data.ptr = (connection *)&server_conn;
     ev.events = EPOLLIN;
 
@@ -98,7 +96,8 @@ int listen_and_accept(int server_fd) {
                 }
                 connection conn = {0};
                 conn.fd = conn_fd;
-                conn.conn_state = CONNECTION_CONNECTED;
+                conn.conn_state = NEW_CONNECTION;
+                init_request_info(&conn.request, &conn.buffer);
                 ev.data.ptr = (connection *)&conn;
                 ev.events = EPOLLIN | EPOLLRDHUP; // Need to implement EPOLLET (non blocking)
                 if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_fd, &ev) == -1) {
@@ -116,6 +115,14 @@ int listen_and_accept(int server_fd) {
                 // if empty \r\n deteced - we have read the line
                 // make sure to read to the buffer inside the pointer we passed to epoll
                 // Perform Work
+                parse_status status = -1;
+                if (event_ptr->conn_state == NEW_CONNECTION) {
+                    status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
+                    if (status == PARSE_READ_ERROR) {
+                        printf("Failed to Read Response\n");
+                        close_connection(epollfd, event_ptr);
+                    }
+                }
                 printf("Huh what is going on\n");
                 close_connection(epollfd, event_ptr);
             }

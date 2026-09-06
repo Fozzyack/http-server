@@ -1,26 +1,28 @@
 #include "http/http.h"
 #include "log/log.h"
+#include <asm-generic/errno-base.h>
+#include <asm-generic/errno.h>
+#include <errno.h>
 #include <linux/limits.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-parse_status read_from_socket(int socket_fd, http_request_buffer *req_buffer) {
-    size_t emtpy_space = BUFFER_SIZE - 1 - req_buffer->end;
-    if (emtpy_space == 0) {
-        return PARSE_READ_BUFFER_FULL;
+parse_status read_from_socket(int fd, http_request_buffer *req_buffer) {
+    size_t empty_space = BUFFER_SIZE - req_buffer->end - 1;
+    ssize_t bytes_read = 0;
+    while (bytes_read != -1) {
+        bytes_read = read(fd, req_buffer->buffer + req_buffer->end, empty_space);
+        if (bytes_read == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                return PARSE_OK;
+            } else {
+                return PARSE_READ_ERROR;
+            }
+        }
     }
-    ssize_t bytes_read = read(socket_fd, req_buffer->buffer + req_buffer->end, emtpy_space);
-    if (bytes_read < 0) {
-        log_errno(LOG_ERROR, "read");
-        return PARSE_READ_ERROR;
-    } else if (bytes_read == 0) {
-        log_errno(LOG_ERROR, "read");
-        return PARSE_READ_SOCKET_DISCONNECTED;
-    }
-    req_buffer->end += bytes_read;
-    req_buffer->buffer[req_buffer->end] = '\0';
     return PARSE_OK;
 }
 
@@ -146,7 +148,7 @@ parse_status parse_headers(http_request *request, http_request_buffer *req_buffe
     return PARSE_OK;
 }
 
-void init_request_buffer(http_request *request, http_request_buffer *buffer) {
+void init_request_info(http_request *request, http_request_buffer *buffer) {
 
     memset(request->method, '\0', METHOD_LENGTH);
     memset(request->path, '\0', REQUEST_TARGET_LENGTH);
@@ -157,46 +159,4 @@ void init_request_buffer(http_request *request, http_request_buffer *buffer) {
     memset(buffer, '\0', BUFFER_SIZE);
     buffer->end = 0;
     buffer->start = 0;
-}
-
-parse_status parse_http_request(http_request *request, int client_fd) {
-
-    struct http_request_buffer req_buffer;
-    init_request_buffer(request, &req_buffer);
-
-    int has_req_line = 0;
-    int has_headers = 0;
-
-    size_t eol = 0; // holds where the end of the line is
-    while (!has_req_line || !has_headers) {
-
-        parse_status status = find_line(&req_buffer, &eol);
-        if (status != PARSE_LINE_NOT_FOUND) {
-            // logic here
-            if (!has_req_line) {
-                if ((status = parse_request_line(request, &req_buffer, &eol)) == PARSE_OK) {
-                    has_req_line = 1;
-                } else {
-                    return status;
-                }
-            } else if (!has_headers) {
-                if (eol == 2) {
-                    has_headers = 1;
-                    req_buffer.start = eol;
-                    align_buffer(&req_buffer);
-                } else {
-                    if ((status = parse_headers(request, &req_buffer, &eol)) != PARSE_OK) {
-                        return status;
-                    }
-                }
-            }
-        } else {
-            status = read_from_socket(client_fd, &req_buffer);
-            if (status == PARSE_READ_SOCKET_DISCONNECTED) {
-                return PARSE_READ_SOCKET_DISCONNECTED;
-            }
-        }
-    }
-
-    return PARSE_OK;
 }

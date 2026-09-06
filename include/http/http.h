@@ -68,7 +68,11 @@ typedef struct http_response {
 
 } http_response;
 
-parse_status parse_http_request(http_request *request, int client_fd);
+// parse.c
+void init_request_info(http_request *request, http_request_buffer *buffer);
+parse_status read_from_socket(int fd, http_request_buffer *req_buffer);
+
+// request.c
 http_response_status response_set_header(const char *key, const char *value, http_response *response);
 http_response_status response_set_json(const char *json_string, http_response *response);
 http_response_status send_response(int client_fd, http_response *response);
