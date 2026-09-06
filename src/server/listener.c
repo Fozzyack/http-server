@@ -11,6 +11,22 @@
 
 #define MAX_EVENTS 1000
 
+typedef enum {
+    CONNECTION_NEW,
+    CONNECTION_CONNECTED,
+    CONNECTION_DISCONNECTED,
+} connection_status;
+
+typedef struct connection {
+    int fd;
+    int conn_state;
+
+    char buffer[BUFFER_SIZE];
+    size_t buffer_start;
+    size_t buffer_end;
+
+} connection;
+
 int handle_http_request(int client_id) {
     http_request req = {0};
     if (parse_http_request(&req, client_id) != PARSE_OK) {
@@ -40,7 +56,11 @@ int listen_and_accept(int server_fd) {
     socklen_t client_info_len = sizeof(client_info);
     struct epoll_event ev, events[MAX_EVENTS];
     int nfds, epollfd, conn_fd = -1;
-    ev.data.fd = server_fd;
+
+    connection server_conn = {0};
+    server_conn.fd = server_fd;
+    server_conn.conn_state = CONNECTION_CONNECTED;
+    ev.data.ptr = (connection *)&server_conn;
     ev.events = EPOLLIN;
 
     epollfd = epoll_create1(0);
@@ -62,23 +82,29 @@ int listen_and_accept(int server_fd) {
         }
 
         for (int i = 0; i < nfds; i++) {
-            if (events[i].data.fd == server_fd) {
+            connection *event_ptr = events[i].data.ptr;
+            if (event_ptr && event_ptr->fd == server_fd) {
                 conn_fd = accept(server_fd, (struct sockaddr *)&client_info, &client_info_len);
                 if (conn_fd == -1) {
                     perror("accept");
                     return -1;
                 }
-                ev.data.fd = conn_fd;
+                connection conn = {0};
+                conn.fd = conn_fd;
+                conn.conn_state = CONNECTION_CONNECTED;
+                ev.data.ptr = (connection *)&conn;
                 ev.events = EPOLLIN | EPOLLRDHUP; // Need to implement EPOLLET (non blocking)
                 if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_fd, &ev) == -1) {
                     perror("epoll_ctl; server_fd");
                     close(conn_fd);
                     return -1;
                 }
-
+                // If we add the event then we need to create a new object to hold the state of each file descriptor
+                // (connection)
             } else {
-                log_message(LOG_INFO, "fd waiting for read/write");
-                close(conn_fd);
+                // Parse HTTP request
+                // Perform Work
+                printf("Huh what is going on\n");
             }
         }
     }
