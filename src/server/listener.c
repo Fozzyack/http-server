@@ -114,23 +114,25 @@ int listen_and_accept(int server_fd) {
                 // make sure to read to the buffer inside the pointer we passed to epoll
                 // Perform Work
                 parse_status status = -1;
+                int conn_open = 1;
                 for (;;) {
                     size_t eol = 0;
                     if (event_ptr->conn_state == NEW_CONNECTION) {
                         status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
                         if (status == PARSE_READ_ERROR) {
-                            printf("Failed to Read Response\n");
+                            log_message(LOG_ERROR, "Failed to Read Response\n");
                             close_connection(epollfd, event_ptr);
+                            conn_open = 0;
                             break;
                         }
                         status = find_line(&event_ptr->buffer, &eol);
                         if (status != PARSE_OK) {
-                            printf("No line found\n");
                             break;
                         }
                         status = parse_request_line(&event_ptr->request, &event_ptr->buffer, &eol);
                         if (status != PARSE_OK) {
-                            printf("Failed to Parse Request Line\n");
+                            log_message(LOG_ERROR, "Failed to Parse Request Line\n");
+                            conn_open = 0;
                             close_connection(epollfd, event_ptr);
                             break;
                         } else {
@@ -140,7 +142,7 @@ int listen_and_accept(int server_fd) {
                     if (event_ptr->conn_state == PARSED_REQUEST_LINE) {
                         status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
                         if (status == PARSE_READ_ERROR) {
-                            printf("Failed to Read Response\n");
+                            conn_open = 0;
                             close_connection(epollfd, event_ptr);
                             break;
                         }
@@ -148,7 +150,6 @@ int listen_and_accept(int server_fd) {
                         while (event_ptr->conn_state != PARSED_HEADERS) {
                             status = find_line(&event_ptr->buffer, &eol);
                             if (status != PARSE_OK) {
-                                printf("No line found\n");
                                 break;
                             }
                             if (eol == 2) {
@@ -157,7 +158,8 @@ int listen_and_accept(int server_fd) {
                             }
                             status = parse_header(&event_ptr->request, &event_ptr->buffer, &eol);
                             if (status != PARSE_OK) {
-                                printf("Failed to Parse Request Line\n");
+                                conn_open = 0;
+                                log_message(LOG_ERROR, "Failed to Parse Header\n");
                                 close_connection(epollfd, event_ptr);
                                 break;
                             }
@@ -165,6 +167,15 @@ int listen_and_accept(int server_fd) {
                         break;
                     }
                 }
+
+                if (!conn_open) {
+                    continue;
+                }
+
+                if (event_ptr->conn_state != PARSED_HEADERS) {
+                    continue;
+                }
+
                 log_message(LOG_INFO, "%s %s %s", event_ptr->request.method, event_ptr->request.path,
                             event_ptr->request.protocol);
                 for (size_t i = 0; i < event_ptr->request.header_count; i++) {
