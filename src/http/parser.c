@@ -40,9 +40,9 @@ parse_status read_from_socket(int fd, http_request_buffer *req_buffer) {
                 continue;
             }
             return PARSE_READ_ERROR;
-            if (bytes_read == 0) {
-                return PARSE_READ_SOCKET_DISCONNECTED;
-            }
+        }
+        if (bytes_read == 0) {
+            return PARSE_READ_SOCKET_DISCONNECTED;
         }
         req_buffer->end += bytes_read;
         req_buffer->buffer[req_buffer->end] = '\0';
