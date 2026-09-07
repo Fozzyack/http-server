@@ -69,9 +69,5 @@ router_status setup_router(router *r) {
         log_message(LOG_ERROR, "add router; healthcheck");
         return status;
     }
-
-    // Add routes here
-    // ...
-
     return ROUTER_OK;
 }
