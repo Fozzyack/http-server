@@ -1,6 +1,8 @@
 #ifndef ROUTER_H
 #define ROUTER_H
 
+#include <stddef.h>
+
 typedef enum router_status {
     ROUTER_OK,
     ROUTER_ERROR,
@@ -15,5 +17,10 @@ typedef struct route {
     char *path;
     route_handler handler;
 } route;
+
+typedef struct router {
+    route *routes;
+    size_t route_count;
+} router;
 
 #endif // !ROUTER_H
