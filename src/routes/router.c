@@ -44,6 +44,7 @@ router_status add_route(char *path, int is_threaded, router *r, void (*handler)(
     r->routes[r->route_count].path.name[path_size] = '\0';
     r->routes[r->route_count].path.size = path_size;
     r->routes[r->route_count].handler.fn = handler;
+    r->routes[r->route_count].is_threaded = is_threaded;
     r->routes[r->route_count].handler.args = args;
     r->route_count++;
     return ROUTER_OK;
