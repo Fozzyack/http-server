@@ -28,6 +28,7 @@ parse_status read_from_socket(int fd, http_request_buffer *req_buffer) {
     while (bytes_read > 0) {
         size_t empty_space = BUFFER_SIZE - req_buffer->end - 1;
         if (empty_space == 0) {
+            log_message(LOG_WARN, "read_from_socket; buffer is full");
             return PARSE_READ_BUFFER_FULL;
         }
         bytes_read = read(fd, req_buffer->buffer + req_buffer->end, empty_space);
@@ -42,6 +43,7 @@ parse_status read_from_socket(int fd, http_request_buffer *req_buffer) {
             return PARSE_READ_ERROR;
         }
         if (bytes_read == 0) {
+            log_message(LOG_ERROR, "read_from_socket; socket disconnected");
             return PARSE_READ_SOCKET_DISCONNECTED;
         }
         req_buffer->end += bytes_read;
@@ -108,7 +110,7 @@ parse_status parse_request_line(http_request *request, http_request_buffer *req_
 
         size_t length = (size_t)(cursor - start);
         if (length >= capacities[i]) {
-            log_message(LOG_ERROR, "request line header field exceeds max width");
+            log_message(LOG_ERROR, "parse_request_line; request line header field exceeds max width");
             return PARSE_REQUEST_FIELD_EXCEEDS_MAX_LENGTH;
         }
         memcpy(destinations[i], start, length);
@@ -122,7 +124,7 @@ parse_status parse_request_line(http_request *request, http_request_buffer *req_
         }
     }
     if (*cursor != '\r') {
-        log_message(LOG_ERROR, "request line header field ends incorrectly");
+        log_message(LOG_ERROR, "parse_request_line; request line header field ends incorrectly");
         return PARSE_REQUEST_FIELD_ERROR;
     }
     req_buffer->start = *eol;
@@ -133,7 +135,7 @@ parse_status parse_request_line(http_request *request, http_request_buffer *req_
 
 parse_status parse_header(http_request *request, http_request_buffer *req_buffer, size_t *eol) {
     if (request->header_count >= MAX_HEADERS) {
-        log_message(LOG_ERROR, "max headers reached; cannot add new headers");
+        log_message(LOG_ERROR, "parse_header; max headers reached; cannot add new headers");
         return PARSE_HEADER_EXCEEDS_MAX_HEADERS;
     }
     char *cursor = req_buffer->buffer;
@@ -147,7 +149,7 @@ parse_status parse_header(http_request *request, http_request_buffer *req_buffer
     }
     size_t length = (size_t)(cursor - start);
     if (length >= HEADER_NAME_LENGTH) {
-        log_message(LOG_ERROR, "header name exceeds max length");
+        log_message(LOG_ERROR, "parse_header; header name exceeds max length");
         return PARSE_HEADER_FIELD_EXCEEDS_MAX_LENGTH;
     }
     memcpy(header.name, start, length);
@@ -163,7 +165,7 @@ parse_status parse_header(http_request *request, http_request_buffer *req_buffer
     }
     length = (size_t)(cursor - start);
     if (length >= HEADER_VALUE_LENGTH) {
-        log_message(LOG_ERROR, "header value exceeds max length");
+        log_message(LOG_ERROR, "parse_header; header value exceeds max length");
         return PARSE_HEADER_FIELD_EXCEEDS_MAX_LENGTH;
     }
     memcpy(header.value, start, length);
