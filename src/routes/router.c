@@ -13,7 +13,7 @@ router init_router(void) {
 
 void delete_router(router *r) { free(r->routes); }
 
-router_status add_route(char *path, int is_threaded, router *r, void (*handler)(void)) {
+router_status add_route(char *path, int is_threaded, router *r, void (*handler)(void *args), void *args) {
 
     if (is_threaded > 1 || is_threaded < 0) {
         log_message(LOG_ERROR, "invalid thread value given");
@@ -44,6 +44,7 @@ router_status add_route(char *path, int is_threaded, router *r, void (*handler)(
     r->routes[r->route_count].path.name[path_size] = '\0';
     r->routes[r->route_count].path.size = path_size;
     r->routes[r->route_count].handler.fn = handler;
+    r->routes[r->route_count].handler.args = args;
     r->routes[r->route_count].is_threaded = is_threaded;
     r->route_count++;
     return ROUTER_OK;
@@ -54,7 +55,7 @@ status_code execute_route(char *path, router *r) {
 
         if (!strcmp(path, r->routes[i].path.name)) {
             route_handler handler = r->routes[i].handler;
-            (*handler.fn)();
+            (*handler.fn)(r);
             return HTTP_OK;
         }
     }
@@ -64,7 +65,7 @@ status_code execute_route(char *path, router *r) {
 
 router_status setup_router(router *r) {
     *r = init_router();
-    router_status status = add_route("/healthcheck", 0, r, healthcheck);
+    router_status status = add_route("/healthcheck", 0, r, healthcheck, NULL);
     if (status != ROUTER_OK) {
         log_message(LOG_ERROR, "add router; healthcheck");
         return status;
