@@ -13,9 +13,13 @@ typedef enum router_status {
     ROUTER_ADD_INVALID_PATH_TOO_LONG,
 } router_status;
 
+typedef enum status_code {
+    HTTP_OK,
+    HTTP_NOT_FOUND,
+} status_code;
+
 typedef struct route_handler {
-    void (*fn)(void *args);
-    void *args;
+    void (*fn)(void);
 } route_handler;
 
 typedef struct route_path {
@@ -30,12 +34,16 @@ typedef struct route {
 } route;
 
 typedef struct router {
+    int socket_fd;
     route *routes;
     size_t route_count;
 } router;
 
-router_status add_route(char *path, int is_threaded, router *r, void (*handler)(void *args), void *args);
-router_status setup_routes(router *r);
+// router setup
+router_status setup_router(int fd, router *r);
 void delete_router(router *r);
+
+// routes
+void healthcheck(void);
 
 #endif // !ROUTER_H

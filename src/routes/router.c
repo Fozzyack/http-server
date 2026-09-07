@@ -4,8 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-router init_router(void) {
+router init_router(int fd) {
     router r;
+    r.socket_fd = fd;
     r.routes = NULL;
     r.route_count = 0;
     return r;
@@ -13,7 +14,7 @@ router init_router(void) {
 
 void delete_router(router *r) { free(r->routes); }
 
-router_status add_route(char *path, int is_threaded, router *r, void (*handler)(void *args), void *args) {
+router_status add_route(char *path, int is_threaded, router *r, void (*handler)(void)) {
 
     if (is_threaded > 1 || is_threaded < 0) {
         log_message(LOG_ERROR, "invalid thread value given");
@@ -45,13 +46,30 @@ router_status add_route(char *path, int is_threaded, router *r, void (*handler)(
     r->routes[r->route_count].path.size = path_size;
     r->routes[r->route_count].handler.fn = handler;
     r->routes[r->route_count].is_threaded = is_threaded;
-    r->routes[r->route_count].handler.args = args;
     r->route_count++;
     return ROUTER_OK;
 }
 
-router_status setup_routes(router *r) {
-    *r = init_router();
+status_code execute_route(char *path, router *r) {
+    for (size_t i = 0; i < r->route_count; i++) {
+
+        if (!strcmp(path, r->routes[i].path.name)) {
+            route_handler handler = r->routes[i].handler;
+            (*handler.fn)();
+            return HTTP_OK;
+        }
+    }
+    // If  we reach here return 404
+    return HTTP_NOT_FOUND;
+}
+
+router_status setup_router(int client_fd, router *r) {
+    *r = init_router(client_fd);
+    router_status status = add_route("/healthcheck", 0, r, healthcheck);
+    if (status != ROUTER_OK) {
+        log_message(LOG_ERROR, "add router; healthcheck");
+        return status;
+    }
 
     // Add routes here
     // ...
