@@ -4,9 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-router init_router(int fd) {
+router init_router(void) {
     router r;
-    r.socket_fd = fd;
     r.routes = NULL;
     r.route_count = 0;
     return r;
@@ -63,8 +62,8 @@ status_code execute_route(char *path, router *r) {
     return HTTP_NOT_FOUND;
 }
 
-router_status setup_router(int client_fd, router *r) {
-    *r = init_router(client_fd);
+router_status setup_router(router *r) {
+    *r = init_router();
     router_status status = add_route("/healthcheck", 0, r, healthcheck);
     if (status != ROUTER_OK) {
         log_message(LOG_ERROR, "add router; healthcheck");

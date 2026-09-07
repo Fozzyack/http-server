@@ -34,13 +34,12 @@ typedef struct route {
 } route;
 
 typedef struct router {
-    int socket_fd;
     route *routes;
     size_t route_count;
 } router;
 
 // router setup
-router_status setup_router(int fd, router *r);
+router_status setup_router(router *r);
 void delete_router(router *r);
 
 // routes
