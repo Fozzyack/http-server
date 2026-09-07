@@ -15,7 +15,7 @@ int main(void) {
         return EXIT_FAILURE;
     }
     setup_router(&router_info);
-    server_status = listen_and_accept(server_info.socket_fd);
+    server_status = listen_and_accept(server_info.socket_fd, &router_info);
     if (server_status != SERVER_OK) {
         return EXIT_FAILURE;
     }

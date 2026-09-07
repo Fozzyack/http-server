@@ -1,6 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include "routes/router.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
@@ -22,6 +23,6 @@ typedef struct {
 
 tcp_server_status bind_tcp_server(tcp_server_info *server_info);
 tcp_server_status init_server(tcp_server_info *server_info, int port);
-int listen_and_accept(int server_fd);
+int listen_and_accept(int server_fd, router *r);
 
 #endif // !SERVER_H

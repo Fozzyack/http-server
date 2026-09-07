@@ -1,6 +1,6 @@
 #include "http/http.h"
 #include "log/log.h"
-#include "server/server.h"
+#include "routes/router.h"
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <stddef.h>
@@ -43,7 +43,7 @@ int close_connection(int epollfd, connection *conn) {
     return 0;
 }
 
-int listen_and_accept(int server_fd) {
+int listen_and_accept(int server_fd, router *r) {
 
     struct sockaddr_in client_info = {0};
     socklen_t client_info_len = sizeof(client_info);
