@@ -86,6 +86,7 @@ shutdown, and complete malformed-request handling are not implemented yet.
 | `src/server/listener.c` | `epoll` loop, client acceptance, and request parsing |
 | `src/http/parser.c` | Buffered request-line and header parsing |
 | `src/http/response.c` | Response construction, JSON bodies, and sending helpers |
+| `src/routes/router.c` | Route registration primitives, not yet wired into the listener |
 | `src/threadpool/threadpool.c` | Worker threads and bounded task queue |
 | `src/log/log.c` | Logging and `errno` helpers |
 | `include/` | Public interfaces and protocol data structures |
