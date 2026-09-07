@@ -36,5 +36,6 @@ typedef struct router {
 
 router_status add_route(char *path, int is_threaded, router *r, void (*handler)(void *args), void *args);
 router_status setup_routes(router *r);
+void delete_router(router *r);
 
 #endif // !ROUTER_H
