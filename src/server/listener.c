@@ -168,6 +168,10 @@ int listen_and_accept(int server_fd, router *r) {
                     }
                 }
 
+                // decode body if applicable
+
+                // Execute route handler
+
                 if (!conn_open) {
                     continue;
                 }
