@@ -19,8 +19,8 @@ typedef enum status_code {
 } status_code;
 
 typedef struct route_handler {
-    void (*fn)(void *args);
-    void *args;
+    void (*fn)(int client_fd);
+    int client_fd;
 } route_handler;
 
 typedef struct route_path {
@@ -44,6 +44,6 @@ router_status setup_router(router *r);
 void delete_router(router *r);
 
 // routes
-void healthcheck(void *args);
+void healthcheck(int client_fd);
 
 #endif // !ROUTER_H
