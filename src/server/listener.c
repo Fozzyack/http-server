@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -17,6 +18,8 @@ typedef enum {
     PARSED_REQUEST_LINE,
     PARSED_HEADERS,
     PARSED_BODY,
+    ROUTE_FOUND,
+    ROUTE_NOT_FOUND,
     WRITTEN_RESPONSE,
 } connection_status;
 
@@ -26,6 +29,8 @@ typedef struct connection {
 
     http_request request;
     http_request_buffer buffer;
+
+    route conn_route;
 } connection;
 
 int setnonblocking(int fd) {
@@ -171,6 +176,23 @@ int listen_and_accept(int server_fd, router *r) {
                 // decode body if applicable
 
                 // Execute route handler
+                if (event_ptr->conn_state == PARSED_HEADERS) { // Should check body first however, implementing the
+                                                               // route first 
+
+                    // The goal should be to loop through the router routes and assign the route to event_ptr->conn_route
+
+                    for(size_t i = 0; i < r->route_count; i++) {
+                        if (!strcmp(event_ptr->request.path, r->routes[i].path.name)) {
+                            event_ptr->conn_route = r->routes[i];
+                            event_ptr->conn_state = ROUTE_FOUND;
+                            break;
+                        } else {
+                            event_ptr->conn_state = ROUTE_NOT_FOUND; // Should lead to a 404 error in the future
+
+                        }
+                    }
+
+                }
 
                 if (!conn_open) {
                     continue;
