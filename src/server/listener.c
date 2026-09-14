@@ -175,7 +175,7 @@ int listen_and_accept(int server_fd, router *r) {
 
                 // decode body if applicable
 
-                // Execute route handler
+                // Determine if route is in routes
                 if (event_ptr->conn_state == PARSED_HEADERS) { // Should check body first however, implementing the
                                                                // route first 
 
@@ -192,6 +192,14 @@ int listen_and_accept(int server_fd, router *r) {
                         }
                     }
 
+                }
+                // Execute route
+                if (event_ptr->conn_state == ROUTE_FOUND) {
+                    // Execute route handler
+
+                }
+                if (event_ptr->conn_state == ROUTE_NOT_FOUND) {
+                    // Return a 404 here
                 }
 
                 if (!conn_open) {
