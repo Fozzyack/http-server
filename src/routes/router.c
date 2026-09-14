@@ -50,8 +50,11 @@ router_status add_route(char *path, int is_threaded, router *r, void (*handler)(
 }
 
 status_code execute_route(char *path, int client_fd, router *r) {
+
     // Current issue
     // How do we write to the socket in a non-blocking way
+    
+    
     for (size_t i = 0; i < r->route_count; i++) {
 
         if (!strcmp(path, r->routes[i].path.name)) {
