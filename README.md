@@ -1,5 +1,7 @@
 # HTTP Server in C
 
+![HTTP Server in C](assets/http-server-banner.svg)
+
 A small, work-in-progress HTTP server written in C for exploring networking,
 concurrency, memory management, and POSIX system calls. The implementation is
 intentionally close to the operating system and is not production-ready.
