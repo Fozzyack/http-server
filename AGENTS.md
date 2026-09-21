@@ -11,6 +11,8 @@ This project is primarily for learning low-level systems concepts.
 
 ## Architecture
 
+This is a backend server only. This will not serve html files only JSON.
+
 - `src/main.c` starts the server on the fixed port `8080`, initializes the router, and enters the listener loop.
 - `src/server/server.c` owns TCP socket setup, bind, and listen. `src/server/listener.c` owns the `epoll` event loop, accepted-connection state, and incremental request parsing.
 - `src/http/parser.c` parses request lines and headers from the per-connection buffer. Its fixed limits are defined in `include/http/http.h`: 8 KiB input buffer, 100 headers, and bounded request/header fields.
