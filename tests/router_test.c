@@ -23,6 +23,12 @@ int main(void) {
     assert(execute_route(&request, &r, &response) == ROUTER_ROUTE_FOUND);
     assert(response.status == 204);
 
+    http_request missing_request = {.path = "/missing"};
+
+    response.status = 0;
+    assert(execute_route(&missing_request, &r, &response) == ROUTER_ROUTE_NOT_FOUND);
+    assert(response.status == 0);
+
     delete_router(&r);
 
     return EXIT_SUCCESS;
