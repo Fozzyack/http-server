@@ -1,5 +1,4 @@
 #include "routes/router.h"
-#include "http/http.h"
 #include "log/log.h"
 #include <stddef.h>
 #include <stdlib.h>
