@@ -43,7 +43,7 @@ router_status setup_router(router *r);
 void delete_router(router *r);
 
 // routes
-void healthcheck(int client_fd);
+void healthcheck(const http_request *, const http_response *);
 router init_router(void);
 router_status add_route(char *path, int is_threaded, router *r, void (*handler)(int client_fd));
 route_result execute_route(char *path, int client_fd, router *r);
