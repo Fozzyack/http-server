@@ -46,8 +46,9 @@ int setnonblocking(int fd) {
 }
 
 int close_connection(int epollfd, connection *conn) {
-    close(conn->fd);
     epoll_ctl(epollfd, EPOLL_CTL_DEL, conn->fd, NULL);
+    close(conn->fd);
+    free(conn->response_data);
     free(conn);
     return 0;
 }
@@ -110,7 +111,7 @@ int listen_and_accept(int server_fd, router *r) {
                 }
 
                 ev.data.ptr = (connection *)conn;
-                ev.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP; // Need to implement EPOLLET (non blocking)
+                ev.events = EPOLLIN | EPOLLRDHUP; // Need to implement EPOLLET (non blocking)
                 if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_fd, &ev) == -1) {
                     perror("epoll_ctl; server_fd");
                     close(conn_fd);
