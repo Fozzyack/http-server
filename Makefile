@@ -16,7 +16,7 @@ DEPS = $(OBJ:.o=.d)
 
 # TEST DEPS
 ROUTER_TEST = bin/router_test.out
-ROUTER_TEST_OBJ = obj/tests/router_test.o obj/routes/router.o obj/routes/healthcheck.o obj/log/log.o
+ROUTER_TEST_OBJ = obj/tests/router_test.o obj/routes/router.o obj/routes/healthcheck.o obj/log/log.o obj/http/response.o
 ROUTER_TEST_DEPS = $(ROUTER_TEST_OBJ:.o=.d)
 PARSER_TEST = bin/parser_test.out
 PARSER_TEST_OBJ = obj/tests/parser_test.o obj/http/parser.o obj/log/log.o
@@ -85,21 +85,27 @@ test: test-router test-parser test-response test-server test-threadpool test-log
 
 test-router: $(ROUTER_TEST)
 	./$(ROUTER_TEST)
+	@printf '[PASS] router\n'
 
 test-parser: $(PARSER_TEST)
 	./$(PARSER_TEST)
+	@printf '[PASS] parser\n'
 
 test-response: $(RESPONSE_TEST)
 	./$(RESPONSE_TEST)
+	@printf '[PASS] response\n'
 
 test-server: $(SERVER_TEST)
 	./$(SERVER_TEST)
+	@printf '[PASS] server\n'
 
 test-threadpool: $(THREADPOOL_TEST)
 	./$(THREADPOOL_TEST)
+	@printf '[PASS] threadpool\n'
 
 test-log: $(LOG_TEST)
 	./$(LOG_TEST)
+	@printf '[PASS] log\n'
 
 $(ROUTER_TEST): $(ROUTER_TEST_OBJ)
 	@mkdir -p $(dir $@)
