@@ -13,7 +13,14 @@ OBJ = $(patsubst src/%.c, obj/%.o, $(SRC))
 DEBUG_OBJ = $(patsubst src/%.c, obj/debug/%.o, $(SRC))
 DEPS = $(OBJ:.o=.d)
 
-.PHONY: default clean clean-all clean-debug debug
+
+# TEST DEPS
+ROUTER_TEST = bin/router_test
+ROUTER_TEST_OBJ = obj/tests/router_test.o obj/routes/router.o obj/routes/healthcheck.o obj/log/log.o
+ROUTER_TEST_DEPS = $(ROUTER_TEST_OBJ:.o=.d)
+# --------
+
+.PHONY: default clean clean-all clean-debug debug test test-router
 
 default: $(TARGET)
 
@@ -23,7 +30,7 @@ run: $(TARGET)
 debug: $(DEBUG)
 
 
--include $(DEPS)
+-include $(DEPS) $(ROUTER_TEST_DEPS)
 
 all: $(TARGET) $(DEBUG)
 
@@ -55,3 +62,19 @@ $(DEBUG): $(DEBUG_OBJ)
 obj/debug/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(DEBUG_FLAGS) -c $< -o $@
+
+
+# TEST BUILD / RUNNERS
+
+test: test-router
+
+test-router: $(ROUTER_TEST)
+	./$(ROUTER_TEST)
+
+$(ROUTER_TEST): $(ROUTER_TEST_OBJ)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $^
+
+obj/tests/%.o: tests/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
