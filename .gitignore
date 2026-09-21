@@ -54,5 +54,6 @@ dkms.conf
 # debug information files
 *.dwo
 
-# graphify output
+# graphify output and AI coding assistance tools
+.opencode/
 graphify-out/

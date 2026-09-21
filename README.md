@@ -15,9 +15,11 @@ The executable currently implements the first part of an HTTP server:
 - Reads requests incrementally into an 8 KiB buffer.
 - Parses an HTTP request line and up to 100 headers, including requests split
   across multiple reads.
-- Logs the parsed request and headers, then closes the client connection.
+- Looks up parsed request paths in the configured router, logs the request and
+  headers, then closes the client connection.
 
-The server does not yet route requests or send responses. Response-building
+The router is initialized with a `/healthcheck` route, but matching handlers
+are not executed yet and the server does not send responses. Response-building
 helpers and a fixed-size thread pool exist in the source tree, but neither is
 used by the executable. There is currently no automated test suite.
 
@@ -86,7 +88,7 @@ shutdown, and complete malformed-request handling are not implemented yet.
 | `src/server/listener.c` | `epoll` loop, client acceptance, and request parsing |
 | `src/http/parser.c` | Buffered request-line and header parsing |
 | `src/http/response.c` | Response construction, JSON bodies, and sending helpers |
-| `src/routes/router.c` | Route registration primitives, not yet wired into the listener |
+| `src/routes/router.c` | Route registration and lookup primitives; handler execution is not yet wired into the listener |
 | `src/threadpool/threadpool.c` | Worker threads and bounded task queue |
 | `src/log/log.c` | Logging and `errno` helpers |
 | `include/` | Public interfaces and protocol data structures |
