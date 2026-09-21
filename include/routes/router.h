@@ -1,9 +1,8 @@
 #ifndef ROUTER_H
 #define ROUTER_H
 
+#include "http/http.h"
 #include <stddef.h>
-
-#define REQUEST_TARGET_LENGTH 2048 // copy of the one in http.h (will need to restructure to use a shared macro)
 
 typedef enum router_status {
     ROUTER_OK,
