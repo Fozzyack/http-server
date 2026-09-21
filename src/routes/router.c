@@ -58,6 +58,11 @@ router_status add_route(const char *path, int is_threaded, router *r,
 
 route_result execute_route(const http_request *req, const router *r, http_response *res) {
 
+    if (req == NULL || r == NULL || res == NULL) {
+        log_message(LOG_ERROR, "execute_route: request, router, and response must not be NULL");
+        return ROUTER_ROUTE_ERROR;
+    }
+
     for (size_t i = 0; i < r->route_count; i++) {
 
         if (!strcmp(req->path, r->routes[i].path.name)) {
