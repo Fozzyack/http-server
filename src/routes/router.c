@@ -16,6 +16,11 @@ void delete_router(router *r) { free(r->routes); }
 router_status add_route(const char *path, int is_threaded, router *r,
                         void (*handler)(const http_request *, http_response *)) {
 
+    if (path == NULL || r == NULL || handler == NULL) {
+        log_message(LOG_ERROR, "add_route: path, router, and handler must not be NULL");
+        return ROUTER_ERROR;
+    }
+
     if (is_threaded > 1 || is_threaded < 0) {
         log_message(LOG_ERROR, "invalid thread value given");
         return ROUTER_ADD_INVALID_THREADED_VALUE;

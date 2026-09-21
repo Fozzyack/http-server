@@ -15,6 +15,7 @@ typedef enum router_status {
 typedef enum route_result {
     ROUTER_ROUTE_FOUND,
     ROUTER_ROUTE_NOT_FOUND,
+    ROUTER_ROUTE_ERROR,
 } route_result;
 
 typedef struct route_handler {
