@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">HTTP Server in C</title>
+  <desc id="desc">A terminal-inspired banner showing a network request flowing into a C HTTP server.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="0" x2="1">
+      <stop stop-color="#22c55e" stop-opacity="0"/>
+      <stop offset=".25" stop-color="#22c55e"/>
+      <stop offset=".75" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="360" rx="22" fill="url(#background)"/>
+  <path d="M0 282H1200M0 78H1200" stroke="#334155" stroke-opacity=".45"/>
+  <path d="M80 0V360M240 0V360M400 0V360M560 0V360M720 0V360M880 0V360M1040 0V360" stroke="#334155" stroke-opacity=".24"/>
+
+  <rect x="72" y="92" width="214" height="176" rx="14" fill="#0f172a" stroke="#334155"/>
+  <circle cx="104" cy="122" r="7" fill="#fb7185"/>
+  <circle cx="128" cy="122" r="7" fill="#fbbf24"/>
+  <circle cx="152" cy="122" r="7" fill="#22c55e"/>
+  <text x="104" y="163" fill="#94a3b8" font-family="monospace" font-size="15">client</text>
+  <text x="104" y="194" fill="#e2e8f0" font-family="monospace" font-size="16">GET /healthcheck</text>
+  <text x="104" y="222" fill="#38bdf8" font-family="monospace" font-size="14">HTTP/1.1</text>
+
+  <path d="M310 180H510" stroke="url(#signal)" stroke-width="4" filter="url(#glow)"/>
+  <circle cx="348" cy="180" r="7" fill="#22c55e"/>
+  <circle cx="410" cy="180" r="7" fill="#22c55e"/>
+  <circle cx="472" cy="180" r="7" fill="#38bdf8"/>
+  <text x="350" y="150" fill="#64748b" font-family="monospace" font-size="13">TCP STREAM</text>
+
+  <rect x="530" y="66" width="594" height="230" rx="16" fill="#0a101c" stroke="#22c55e" stroke-opacity=".7"/>
+  <rect x="530" y="66" width="10" height="230" rx="5" fill="#22c55e"/>
+  <text x="574" y="125" fill="#f8fafc" font-family="monospace" font-size="42" font-weight="700">HTTP SERVER</text>
+  <text x="578" y="160" fill="#22c55e" font-family="monospace" font-size="18">C / LINUX / EPOLL</text>
+  <path d="M578 192H1072" stroke="#334155"/>
+  <text x="578" y="226" fill="#94a3b8" font-family="monospace" font-size="16">[ socket ] -&gt; [ parser ] -&gt; [ router ]</text>
+  <text x="578" y="260" fill="#38bdf8" font-family="monospace" font-size="16">$ listening on 0.0.0.0:8080_</text>
+</svg>

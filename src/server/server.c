@@ -18,6 +18,8 @@ tcp_server_status init_server(tcp_server_info *server_info, int port) {
         return SERVER_INFO_DOES_NOT_EXIST;
     }
 
+    server_info->socket_fd = -1;
+    server_info->address = (struct sockaddr_in){0};
     server_info->address.sin_family = AF_INET;
     server_info->address.sin_port = htons(port);
     server_info->address.sin_addr.s_addr = INADDR_ANY;
@@ -26,6 +28,10 @@ tcp_server_status init_server(tcp_server_info *server_info, int port) {
 }
 
 tcp_server_status bind_tcp_server(tcp_server_info *server_info) {
+    if (server_info == NULL) {
+        log_message(LOG_ERROR, "server_info is NULL");
+        return SERVER_INFO_DOES_NOT_EXIST;
+    }
 
     int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd == -1) {
@@ -40,23 +46,27 @@ tcp_server_status bind_tcp_server(tcp_server_info *server_info) {
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr)) == -1) {
         perror("setsockopt");
         log_errno(LOG_ERROR, "setsockopt");
+        close(fd);
         return SERVER_SETSOCKOPT_ERROR;
     }
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &reuse_port, sizeof(reuse_port)) == -1) {
         perror("setsockopt");
         log_errno(LOG_ERROR, "setsockopt");
+        close(fd);
         return SERVER_SETSOCKOPT_ERROR;
     }
 
     if (bind(fd, (struct sockaddr *)&(server_info->address), sizeof(server_info->address)) == -1) {
         perror("bind");
         log_errno(LOG_ERROR, "bind");
+        close(fd);
         return SERVER_BIND_ERROR;
     }
 
     if (listen(fd, LISTEN_BACKLOG) == -1) {
         perror("bind");
         log_errno(LOG_ERROR, "listen");
+        close(fd);
         return SERVER_BIND_ERROR;
     }
 

@@ -109,6 +109,9 @@ parse_status parse_request_line(http_request *request, http_request_buffer *req_
         }
 
         size_t length = (size_t)(cursor - start);
+        if (length == 0) {
+            return PARSE_REQUEST_FIELD_ERROR;
+        }
         if (length >= capacities[i]) {
             log_message(LOG_ERROR, "parse_request_line; request line header field exceeds max width");
             return PARSE_REQUEST_FIELD_EXCEEDS_MAX_LENGTH;

@@ -2,18 +2,25 @@
 #include "log/log.h"
 #include <pthread.h>
 #include <stddef.h>
-#include <stdio.h>
 
 threadpool_status threadpool_init(threadpool *t_pool) {
-    pthread_mutex_init(&(t_pool->lock), NULL);
+    if (t_pool == NULL) {
+        return THREADPOOL_ERROR;
+    }
+
+    if (pthread_mutex_init(&(t_pool->lock), NULL) != 0) {
+        return THREADPOOL_ERROR;
+    }
     int status = pthread_cond_init(&(t_pool->condition), NULL);
     if (status != 0) {
         log_message(LOG_ERROR, "init_threadpool: pthread_cond_init failed");
+        pthread_mutex_destroy(&(t_pool->lock));
         return THREADPOOL_ERROR;
     }
     t_pool->pool_stop = 0;
     t_pool->end = 0;
     t_pool->start = 0;
+    t_pool->queue_count = 0;
 
     return THREADPOOL_OK;
 }
@@ -41,6 +48,9 @@ void *thread_target(void *args) {
 }
 
 threadpool_status threadpool_enqueue_task(void (*fn)(void *), void *args, threadpool *t_pool) {
+    if (fn == NULL || t_pool == NULL) {
+        return THREADPOOL_ERROR;
+    }
 
     threadpool_task enqueue_task = {
         .fn = fn,
@@ -65,6 +75,10 @@ threadpool_status threadpool_enqueue_task(void (*fn)(void *), void *args, thread
 }
 
 threadpool_status threadpool_start(threadpool *t_pool) {
+    if (t_pool == NULL) {
+        return THREADPOOL_ERROR;
+    }
+
     threadpool_status status = threadpool_init(t_pool);
     if (status == THREADPOOL_ERROR) {
         return THREADPOOL_ERROR;
@@ -76,6 +90,9 @@ threadpool_status threadpool_start(threadpool *t_pool) {
 }
 
 threadpool_status threadpool_stop(threadpool *t_pool) {
+    if (t_pool == NULL) {
+        return THREADPOOL_ERROR;
+    }
 
     pthread_mutex_lock(&t_pool->lock);
     t_pool->pool_stop = 1;
@@ -83,7 +100,6 @@ threadpool_status threadpool_stop(threadpool *t_pool) {
     pthread_mutex_unlock(&t_pool->lock);
 
     for (int i = 0; i < THREAD_COUNT; i++) {
-        fprintf(stderr, "exiting thread\n");
         pthread_join(t_pool->threads[i], NULL);
     }
     pthread_mutex_destroy(&(t_pool->lock));

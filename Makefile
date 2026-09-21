@@ -18,9 +18,24 @@ DEPS = $(OBJ:.o=.d)
 ROUTER_TEST = bin/router_test.out
 ROUTER_TEST_OBJ = obj/tests/router_test.o obj/routes/router.o obj/routes/healthcheck.o obj/log/log.o
 ROUTER_TEST_DEPS = $(ROUTER_TEST_OBJ:.o=.d)
+PARSER_TEST = bin/parser_test.out
+PARSER_TEST_OBJ = obj/tests/parser_test.o obj/http/parser.o obj/log/log.o
+PARSER_TEST_DEPS = $(PARSER_TEST_OBJ:.o=.d)
+RESPONSE_TEST = bin/response_test.out
+RESPONSE_TEST_OBJ = obj/tests/response_test.o obj/http/response.o obj/log/log.o
+RESPONSE_TEST_DEPS = $(RESPONSE_TEST_OBJ:.o=.d)
+SERVER_TEST = bin/server_test.out
+SERVER_TEST_OBJ = obj/tests/server_test.o obj/server/server.o obj/log/log.o
+SERVER_TEST_DEPS = $(SERVER_TEST_OBJ:.o=.d)
+THREADPOOL_TEST = bin/threadpool_test.out
+THREADPOOL_TEST_OBJ = obj/tests/threadpool_test.o obj/threadpool/threadpool.o obj/log/log.o
+THREADPOOL_TEST_DEPS = $(THREADPOOL_TEST_OBJ:.o=.d)
+LOG_TEST = bin/log_test.out
+LOG_TEST_OBJ = obj/tests/log_test.o obj/log/log.o
+LOG_TEST_DEPS = $(LOG_TEST_OBJ:.o=.d)
 # --------
 
-.PHONY: default clean clean-all clean-debug debug test test-router
+.PHONY: default clean clean-all clean-debug debug test test-router test-parser test-response test-server test-threadpool test-log
 
 default: $(TARGET)
 
@@ -30,7 +45,7 @@ run: $(TARGET)
 debug: $(DEBUG)
 
 
--include $(DEPS) $(ROUTER_TEST_DEPS)
+-include $(DEPS) $(ROUTER_TEST_DEPS) $(PARSER_TEST_DEPS) $(RESPONSE_TEST_DEPS) $(SERVER_TEST_DEPS) $(THREADPOOL_TEST_DEPS) $(LOG_TEST_DEPS)
 
 all: $(TARGET) $(DEBUG)
 
@@ -66,12 +81,47 @@ obj/debug/%.o: src/%.c
 
 # TEST BUILD / RUNNERS
 
-test: test-router
+test: test-router test-parser test-response test-server test-threadpool test-log
 
 test-router: $(ROUTER_TEST)
 	./$(ROUTER_TEST)
 
+test-parser: $(PARSER_TEST)
+	./$(PARSER_TEST)
+
+test-response: $(RESPONSE_TEST)
+	./$(RESPONSE_TEST)
+
+test-server: $(SERVER_TEST)
+	./$(SERVER_TEST)
+
+test-threadpool: $(THREADPOOL_TEST)
+	./$(THREADPOOL_TEST)
+
+test-log: $(LOG_TEST)
+	./$(LOG_TEST)
+
 $(ROUTER_TEST): $(ROUTER_TEST_OBJ)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(PARSER_TEST): $(PARSER_TEST_OBJ)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(RESPONSE_TEST): $(RESPONSE_TEST_OBJ)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(SERVER_TEST): $(SERVER_TEST_OBJ)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(THREADPOOL_TEST): $(THREADPOOL_TEST_OBJ)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(LOG_TEST): $(LOG_TEST_OBJ)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ $^
 

@@ -45,14 +45,14 @@ void log_special_chars(const char *buff, size_t start, size_t end) {
     for (size_t i = 0; i < (end - start); i++) {
         switch (buff[i + start]) {
         case '\r':
-            printf("\\r");
+            fputs("\\r", stderr);
             break;
         case '\n':
-            printf("\\n");
+            fputs("\\n", stderr);
             break;
         default:
-            putchar(buff[i]);
+            fputc(buff[i + start], stderr);
         }
     }
-    putchar('\n');
+    fputc('\n', stderr);
 }
