@@ -198,15 +198,10 @@ int listen_and_accept(int server_fd, router *r) {
                     if (result == ROUTER_ROUTE_NOT_FOUND) {
                         res.status = 404;
                         strcpy(res.status_response, "Not Found");
-                        response_set_json("{\"error\":\"not found\"}", &res);
+                        response_set_json("{\"error\":\"Not Found\"}", &res);
                     }
-                }
-                // Execute route
-                if (event_ptr->conn_state == ROUTE_FOUND) {
-                    // Execute route handler
-                }
-                if (event_ptr->conn_state == ROUTE_NOT_FOUND) {
-                    // Return a 404 here
+                    send_response(event_ptr->fd, &res);
+                    destroy_response(&res);
                 }
 
                 if (!conn_open) {
@@ -219,10 +214,6 @@ int listen_and_accept(int server_fd, router *r) {
 
                 log_message(LOG_INFO, "%s %s %s", event_ptr->request.method, event_ptr->request.path,
                             event_ptr->request.protocol);
-                for (size_t i = 0; i < event_ptr->request.header_count; i++) {
-                    log_message(LOG_INFO, "%s: %s", event_ptr->request.headers[i].name,
-                                event_ptr->request.headers[i].value);
-                }
                 close_connection(epollfd, event_ptr);
             }
         }
