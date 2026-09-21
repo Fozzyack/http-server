@@ -191,14 +191,14 @@ int listen_and_accept(int server_fd, router *r) {
                     // The goal should be to loop through the router routes and assign the route to
                     // event_ptr->conn_route
 
-                    for (size_t i = 0; i < r->route_count; i++) {
-                        if (!strcmp(event_ptr->request.path, r->routes[i].path.name)) {
-                            event_ptr->conn_route = r->routes[i];
-                            event_ptr->conn_state = ROUTE_FOUND;
-                            break;
-                        } else {
-                            event_ptr->conn_state = ROUTE_NOT_FOUND; // Should lead to a 404 error in the future
-                        }
+                    http_response res;
+                    init_response(&res);
+
+                    route_result result = execute_route(&event_ptr->request, r, &res);
+                    if (result == ROUTER_ROUTE_NOT_FOUND) {
+                        res.status = 404;
+                        strcpy(res.status_response, "Not Found");
+                        response_set_json("{\"error\":\"not found\"}", &res);
                     }
                 }
                 // Execute route

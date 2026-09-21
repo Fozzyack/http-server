@@ -5,5 +5,6 @@
 void healthcheck(const http_request *req, http_response *res) {
     (void)res;
     log_message(LOG_INFO, "Server is healthy %s", req->path);
+    response_set_json("{\"status\":\"ok\"}", res);
     return;
 }
