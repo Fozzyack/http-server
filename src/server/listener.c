@@ -30,6 +30,10 @@ typedef struct connection {
     http_request request;
     http_request_buffer buffer;
 
+    char *response_data;
+    size_t response_length;
+    size_t response_sent;
+
     route conn_route;
 } connection;
 
@@ -93,7 +97,11 @@ int listen_and_accept(int server_fd, router *r) {
                 }
                 conn->fd = conn_fd;
                 conn->conn_state = NEW_CONNECTION;
+                conn->response_data = NULL;
+                conn->response_length = 0;
+                conn->response_sent = 0;
                 init_request_info(&(conn->request), &(conn->buffer));
+
                 if (setnonblocking(conn_fd) == -1) {
                     perror("setnonblocking");
                     close(conn_fd);
@@ -102,7 +110,7 @@ int listen_and_accept(int server_fd, router *r) {
                 }
 
                 ev.data.ptr = (connection *)conn;
-                ev.events = EPOLLIN | EPOLLRDHUP; // Need to implement EPOLLET (non blocking)
+                ev.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP; // Need to implement EPOLLET (non blocking)
                 if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_fd, &ev) == -1) {
                     perror("epoll_ctl; server_fd");
                     close(conn_fd);
@@ -177,26 +185,24 @@ int listen_and_accept(int server_fd, router *r) {
 
                 // Determine if route is in routes
                 if (event_ptr->conn_state == PARSED_HEADERS) { // Should check body first however, implementing the
-                                                               // route first 
+                                                               // route first
 
-                    // The goal should be to loop through the router routes and assign the route to event_ptr->conn_route
+                    // The goal should be to loop through the router routes and assign the route to
+                    // event_ptr->conn_route
 
-                    for(size_t i = 0; i < r->route_count; i++) {
+                    for (size_t i = 0; i < r->route_count; i++) {
                         if (!strcmp(event_ptr->request.path, r->routes[i].path.name)) {
                             event_ptr->conn_route = r->routes[i];
                             event_ptr->conn_state = ROUTE_FOUND;
                             break;
                         } else {
                             event_ptr->conn_state = ROUTE_NOT_FOUND; // Should lead to a 404 error in the future
-
                         }
                     }
-
                 }
                 // Execute route
                 if (event_ptr->conn_state == ROUTE_FOUND) {
                     // Execute route handler
-
                 }
                 if (event_ptr->conn_state == ROUTE_NOT_FOUND) {
                     // Return a 404 here
