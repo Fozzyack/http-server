@@ -13,13 +13,12 @@ typedef enum router_status {
 } router_status;
 
 typedef enum route_result {
-    ROUTE_FOUND,
-    ROUTE_NOT_FOUND,
+    ROUTER_ROUTE_FOUND,
+    ROUTER_ROUTE_NOT_FOUND,
 } route_result;
 
 typedef struct route_handler {
-    void (*fn)(const http_request *request, const http_response *http_response);
-    int client_fd;
+    void (*fn)(const http_request *request, http_response *http_response);
 } route_handler;
 
 typedef struct route_path {
@@ -43,9 +42,10 @@ router_status setup_router(router *r);
 void delete_router(router *r);
 
 // routes
-void healthcheck(const http_request *, const http_response *);
+void healthcheck(const http_request *, http_response *);
 router init_router(void);
-router_status add_route(char *path, int is_threaded, router *r, void (*handler)(int client_fd));
-route_result execute_route(char *path, int client_fd, router *r);
+router_status add_route(const char *path, int is_threaded, router *r,
+                        void (*handler)(const http_request *, http_response *));
+route_result execute_route(const http_request *req, const router *r, http_response *res);
 
 #endif // !ROUTER_H

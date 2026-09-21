@@ -1,4 +1,5 @@
 #include "routes/router.h"
+#include "http/http.h"
 #include "log/log.h"
 #include <stddef.h>
 #include <stdlib.h>
@@ -13,7 +14,8 @@ router init_router(void) {
 
 void delete_router(router *r) { free(r->routes); }
 
-router_status add_route(char *path, int is_threaded, router *r, void (*handler)(int client_fd)) {
+router_status add_route(const char *path, int is_threaded, router *r,
+                        void (*handler)(const http_request *, http_response *)) {
 
     if (is_threaded > 1 || is_threaded < 0) {
         log_message(LOG_ERROR, "invalid thread value given");
@@ -33,11 +35,12 @@ router_status add_route(char *path, int is_threaded, router *r, void (*handler)(
             return ROUTER_ADD_ROUTE_ERROR;
         }
     } else {
-        r->routes = realloc(r->routes, sizeof(route) * (r->route_count + 1));
-        if (r->routes == NULL) {
+        route *temp_routes = realloc(r->routes, sizeof(route) * (r->route_count + 1));
+        if (temp_routes == NULL) {
             log_errno(LOG_ERROR, "realloc; add_route");
             return ROUTER_ADD_ROUTE_ERROR;
         }
+        r->routes = temp_routes;
     }
 
     memcpy(r->routes[r->route_count].path.name, path, path_size);
@@ -49,21 +52,17 @@ router_status add_route(char *path, int is_threaded, router *r, void (*handler)(
     return ROUTER_OK;
 }
 
-route_result execute_route(char *path, int client_fd, router *r) {
-
-    // Current issue
-    // How do we write to the socket in a non-blocking way
+route_result execute_route(const http_request *req, const router *r, http_response *res) {
 
     for (size_t i = 0; i < r->route_count; i++) {
 
-        if (!strcmp(path, r->routes[i].path.name)) {
-            route_handler handler = r->routes[i].handler;
-            (*handler.fn)(client_fd);
-            return HTTP_OK;
+        if (!strcmp(req->path, r->routes[i].path.name)) {
+            r->routes[i].handler.fn(req, res);
+            return ROUTER_ROUTE_FOUND;
         }
     }
     // If  we reach here return 404
-    return HTTP_NOT_FOUND;
+    return ROUTER_ROUTE_NOT_FOUND;
 }
 
 router_status setup_router(router *r) {
