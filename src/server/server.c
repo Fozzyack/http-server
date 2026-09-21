@@ -25,12 +25,7 @@ tcp_server_status init_server(tcp_server_info *server_info, int port) {
     return SERVER_OK;
 }
 
-tcp_server_status bind_tcp_server(tcp_server_info *server_info, int port) {
-
-    tcp_server_status status;
-    if ((status = init_server(server_info, port)) != SERVER_OK) {
-        return status;
-    }
+tcp_server_status bind_tcp_server(tcp_server_info *server_info) {
 
     int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd == -1) {

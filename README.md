@@ -15,11 +15,15 @@ The executable currently implements the first part of an HTTP server:
 - Reads requests incrementally into an 8 KiB buffer.
 - Parses an HTTP request line and up to 100 headers, including requests split
   across multiple reads.
-- Logs the parsed request and headers, then closes the client connection.
+- Looks up parsed request paths in the configured router, logs the request and
+  headers, then closes the client connection.
 
-The server does not yet route requests or send responses. Response-building
-helpers and a fixed-size thread pool exist in the source tree, but neither is
-used by the executable. There is currently no automated test suite.
+The router is initialized with a `/healthcheck` route and supports route
+registration, exact path lookup, and handler invocation. The listener has not
+yet been wired to invoke registered handlers, so the executable does not send
+responses. Response-building helpers and a fixed-size thread pool exist in the
+source tree, but neither is used by the executable. A router test suite covers
+route matches, missing routes, handler invocation, and invalid inputs.
 
 ## Running It
 
@@ -50,6 +54,7 @@ make          # build bin/server.out
 make debug    # build debug/server.out with symbols and no optimization
 make all      # build both normal and debug executables
 make run      # build and run bin/server.out
+make test     # build and run the router test suite
 make clean    # remove all generated files
 make clean-bin
 make clean-debug
@@ -74,8 +79,9 @@ The parser currently uses fixed-size structures defined in
 | Header name | 63 characters plus the terminator |
 | Header value | 1023 characters plus the terminator |
 
-Request bodies, routing, `Content-Length`, keep-alive behavior, graceful
-shutdown, and complete malformed-request handling are not implemented yet.
+Request bodies, listener-to-router integration, `Content-Length`, keep-alive
+behavior, graceful shutdown, and complete malformed-request handling are not
+implemented yet.
 
 ## Project Layout
 
@@ -86,10 +92,12 @@ shutdown, and complete malformed-request handling are not implemented yet.
 | `src/server/listener.c` | `epoll` loop, client acceptance, and request parsing |
 | `src/http/parser.c` | Buffered request-line and header parsing |
 | `src/http/response.c` | Response construction, JSON bodies, and sending helpers |
+| `src/routes/router.c` | Route registration, exact path lookup, and handler invocation; listener integration is not implemented yet |
 | `src/threadpool/threadpool.c` | Worker threads and bounded task queue |
 | `src/log/log.c` | Logging and `errno` helpers |
 | `include/` | Public interfaces and protocol data structures |
-| `Makefile` | Build, run, debug, and cleanup targets |
+| `tests/router_test.c` | Assertion-based tests for router behavior |
+| `Makefile` | Build, run, test, debug, and cleanup targets |
 
 ## Areas Being Explored
 
@@ -102,7 +110,7 @@ shutdown, and complete malformed-request handling are not implemented yet.
 
 ## Next Steps
 
-Likely next steps are to add request routing and response generation, connect
-client work to the thread pool, handle request bodies and connection
-lifetime, improve cleanup and shutdown paths, and add parser, response, socket,
-and thread-pool tests.
+Likely next steps are to invoke the router from the listener and generate
+responses, connect client work to the thread pool, handle request bodies and
+connection lifetime, improve cleanup and shutdown paths, and add parser,
+response, socket, and thread-pool tests.

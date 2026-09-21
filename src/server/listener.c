@@ -1,11 +1,12 @@
 #include "http/http.h"
 #include "log/log.h"
-#include "server/server.h"
+#include "routes/router.h"
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -17,6 +18,8 @@ typedef enum {
     PARSED_REQUEST_LINE,
     PARSED_HEADERS,
     PARSED_BODY,
+    ROUTE_FOUND,
+    ROUTE_NOT_FOUND,
     WRITTEN_RESPONSE,
 } connection_status;
 
@@ -26,6 +29,8 @@ typedef struct connection {
 
     http_request request;
     http_request_buffer buffer;
+
+    route conn_route;
 } connection;
 
 int setnonblocking(int fd) {
@@ -43,7 +48,7 @@ int close_connection(int epollfd, connection *conn) {
     return 0;
 }
 
-int listen_and_accept(int server_fd) {
+int listen_and_accept(int server_fd, router *r) {
 
     struct sockaddr_in client_info = {0};
     socklen_t client_info_len = sizeof(client_info);
@@ -166,6 +171,35 @@ int listen_and_accept(int server_fd) {
                         }
                         break;
                     }
+                }
+
+                // decode body if applicable
+
+                // Determine if route is in routes
+                if (event_ptr->conn_state == PARSED_HEADERS) { // Should check body first however, implementing the
+                                                               // route first 
+
+                    // The goal should be to loop through the router routes and assign the route to event_ptr->conn_route
+
+                    for(size_t i = 0; i < r->route_count; i++) {
+                        if (!strcmp(event_ptr->request.path, r->routes[i].path.name)) {
+                            event_ptr->conn_route = r->routes[i];
+                            event_ptr->conn_state = ROUTE_FOUND;
+                            break;
+                        } else {
+                            event_ptr->conn_state = ROUTE_NOT_FOUND; // Should lead to a 404 error in the future
+
+                        }
+                    }
+
+                }
+                // Execute route
+                if (event_ptr->conn_state == ROUTE_FOUND) {
+                    // Execute route handler
+
+                }
+                if (event_ptr->conn_state == ROUTE_NOT_FOUND) {
+                    // Return a 404 here
                 }
 
                 if (!conn_open) {
