@@ -12,6 +12,7 @@ int main(void) {
     router r = init_router();
     http_request request = {.path = "/test"};
     http_response response = {0};
+    http_request missing_request = {.path = "/missing"};
     assert(add_route(NULL, 0, &r, test_handler) == ROUTER_ERROR);
     assert(add_route("/test", 0, NULL, test_handler) == ROUTER_ERROR);
     assert(add_route("/test", 0, &r, NULL) == ROUTER_ERROR);
@@ -22,8 +23,6 @@ int main(void) {
     assert(add_route("/test", 0, &r, test_handler) == ROUTER_OK);
     assert(execute_route(&request, &r, &response) == ROUTER_ROUTE_FOUND);
     assert(response.status == 204);
-
-    http_request missing_request = {.path = "/missing"};
 
     response.status = 0;
     assert(execute_route(&missing_request, &r, &response) == ROUTER_ROUTE_NOT_FOUND);
