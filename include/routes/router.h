@@ -12,10 +12,10 @@ typedef enum router_status {
     ROUTER_ADD_INVALID_PATH_TOO_LONG,
 } router_status;
 
-typedef enum status_code {
-    HTTP_OK,
-    HTTP_NOT_FOUND,
-} status_code;
+typedef enum route_result {
+    ROUTE_FOUND,
+    ROUTE_NOT_FOUND,
+} route_result;
 
 typedef struct route_handler {
     void (*fn)(int client_fd);
