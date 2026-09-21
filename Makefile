@@ -15,7 +15,7 @@ DEPS = $(OBJ:.o=.d)
 
 
 # TEST DEPS
-ROUTER_TEST = bin/router_test
+ROUTER_TEST = bin/router_test.out
 ROUTER_TEST_OBJ = obj/tests/router_test.o obj/routes/router.o obj/routes/healthcheck.o obj/log/log.o
 ROUTER_TEST_DEPS = $(ROUTER_TEST_OBJ:.o=.d)
 # --------
