@@ -18,7 +18,7 @@ typedef enum route_result {
 } route_result;
 
 typedef struct route_handler {
-    void (*fn)(int client_fd);
+    void (*fn)(const http_request *request, const http_response *http_response);
     int client_fd;
 } route_handler;
 
