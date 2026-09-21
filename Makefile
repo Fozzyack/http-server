@@ -24,9 +24,12 @@ PARSER_TEST_DEPS = $(PARSER_TEST_OBJ:.o=.d)
 RESPONSE_TEST = bin/response_test.out
 RESPONSE_TEST_OBJ = obj/tests/response_test.o obj/http/response.o obj/log/log.o
 RESPONSE_TEST_DEPS = $(RESPONSE_TEST_OBJ:.o=.d)
+SERVER_TEST = bin/server_test.out
+SERVER_TEST_OBJ = obj/tests/server_test.o obj/server/server.o obj/log/log.o
+SERVER_TEST_DEPS = $(SERVER_TEST_OBJ:.o=.d)
 # --------
 
-.PHONY: default clean clean-all clean-debug debug test test-router test-parser test-response
+.PHONY: default clean clean-all clean-debug debug test test-router test-parser test-response test-server
 
 default: $(TARGET)
 
@@ -36,7 +39,7 @@ run: $(TARGET)
 debug: $(DEBUG)
 
 
--include $(DEPS) $(ROUTER_TEST_DEPS) $(PARSER_TEST_DEPS) $(RESPONSE_TEST_DEPS)
+-include $(DEPS) $(ROUTER_TEST_DEPS) $(PARSER_TEST_DEPS) $(RESPONSE_TEST_DEPS) $(SERVER_TEST_DEPS)
 
 all: $(TARGET) $(DEBUG)
 
@@ -72,7 +75,7 @@ obj/debug/%.o: src/%.c
 
 # TEST BUILD / RUNNERS
 
-test: test-router test-parser test-response
+test: test-router test-parser test-response test-server
 
 test-router: $(ROUTER_TEST)
 	./$(ROUTER_TEST)
@@ -83,6 +86,9 @@ test-parser: $(PARSER_TEST)
 test-response: $(RESPONSE_TEST)
 	./$(RESPONSE_TEST)
 
+test-server: $(SERVER_TEST)
+	./$(SERVER_TEST)
+
 $(ROUTER_TEST): $(ROUTER_TEST_OBJ)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ $^
@@ -92,6 +98,10 @@ $(PARSER_TEST): $(PARSER_TEST_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(RESPONSE_TEST): $(RESPONSE_TEST_OBJ)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(SERVER_TEST): $(SERVER_TEST_OBJ)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ $^
 
