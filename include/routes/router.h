@@ -44,5 +44,8 @@ void delete_router(router *r);
 
 // routes
 void healthcheck(int client_fd);
+router init_router(void);
+router_status add_route(char *path, int is_threaded, router *r, void (*handler)(int client_fd));
+route_result execute_route(char *path, int client_fd, router *r);
 
 #endif // !ROUTER_H
