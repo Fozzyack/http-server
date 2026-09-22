@@ -122,27 +122,17 @@ int listen_and_accept(int server_fd, router *r) {
                 // If we add the event then we need to create a new object to hold the state of each file descriptor
                 // (connection)
             } else {
-                // Parse HTTP request
-                // read here
-                // after read check for line
-                // if \r\n detected - parse line
-                // if empty \r\n deteced - we have read the line
-                // make sure to read to the buffer inside the pointer we passed to epoll
-                // Perform Work
                 parse_status status = -1;
                 int conn_open = 1;
                 for (;;) {
-                    if (event_ptr->conn_state == WRITTEN_RESPONSE) {
-                        break;
-                    }
-
                     size_t eol = 0;
+                    // Read incoming bytes until a complete request line is available.
+                    // Parse it and advance the connection to header parsing.
                     if (event_ptr->conn_state == NEW_CONNECTION) {
                         status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
                         if (status == PARSE_READ_ERROR || status == PARSE_READ_SOCKET_DISCONNECTED) {
-                            log_message(LOG_ERROR, "Failed to Read Response\n");
+                            log_message(LOG_ERROR, "Failed to read request");
                             close_connection(epollfd, event_ptr);
-                            conn_open = 0;
                             break;
                         }
                         status = find_line(&event_ptr->buffer, &eol);
@@ -151,18 +141,16 @@ int listen_and_accept(int server_fd, router *r) {
                         }
                         status = parse_request_line(&event_ptr->request, &event_ptr->buffer, &eol);
                         if (status != PARSE_OK) {
-                            log_message(LOG_ERROR, "Failed to Parse Request Line\n");
-                            conn_open = 0;
+                            log_message(LOG_ERROR, "Failed to parse request line");
                             close_connection(epollfd, event_ptr);
                             break;
-                        } else {
-                            event_ptr->conn_state = PARSED_REQUEST_LINE;
                         }
-                    }
-                    if (event_ptr->conn_state == PARSED_REQUEST_LINE) {
+                        event_ptr->conn_state = PARSED_REQUEST_LINE;
+                        // Consume complete header lines from the buffered request.
+                        // A blank line finishes the header section and advances the connection.
+                    } else if (event_ptr->conn_state == PARSED_REQUEST_LINE) {
                         status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
                         if (status == PARSE_READ_ERROR || status == PARSE_READ_SOCKET_DISCONNECTED) {
-                            conn_open = 0;
                             close_connection(epollfd, event_ptr);
                             break;
                         }
@@ -179,71 +167,68 @@ int listen_and_accept(int server_fd, router *r) {
                             status = parse_header(&event_ptr->request, &event_ptr->buffer, &eol);
                             if (status != PARSE_OK) {
                                 conn_open = 0;
-                                log_message(LOG_ERROR, "Failed to Parse Header\n");
+                                log_message(LOG_ERROR, "Failed to parse header");
                                 close_connection(epollfd, event_ptr);
                                 break;
                             }
                         }
-                        break;
-                    }
-                }
+                        if (!conn_open || event_ptr->conn_state != PARSED_HEADERS) {
+                            break;
+                        }
+                        // Route the complete request and serialize the resulting response.
+                        // Switch epoll to write readiness, then yield until EPOLLOUT arrives.
+                    } else if (event_ptr->conn_state == PARSED_HEADERS) {
+                        http_response res;
+                        init_response(&res);
 
-                // decode body if applicable
+                        route_result result = execute_route(&event_ptr->request, r, &res);
+                        if (result == ROUTER_ROUTE_NOT_FOUND) {
+                            res.status = 404;
+                            strcpy(res.status_response, "Not Found");
+                            response_set_json("{\"error\":\"Not Found\"}", &res);
+                        }
 
-                // Determine if route is in routes
-                if (event_ptr->conn_state == PARSED_HEADERS) { // Should check body first however, implementing the
-                                                               // route first
+                        event_ptr->response_data = construct_response(&res, &event_ptr->response_length);
+                        event_ptr->response_sent = 0;
+                        destroy_response(&res);
+                        if (event_ptr->response_data == NULL) {
+                            log_message(LOG_ERROR, "Failed to construct response");
+                            close_connection(epollfd, event_ptr);
+                            break;
+                        }
 
-                    // The goal should be to loop through the router routes and assign the route to
-                    // event_ptr->conn_route
-
-                    http_response res;
-                    init_response(&res);
-
-                    route_result result = execute_route(&event_ptr->request, r, &res);
-                    if (result == ROUTER_ROUTE_NOT_FOUND) {
-                        res.status = 404;
-                        strcpy(res.status_response, "Not Found");
-                        response_set_json("{\"error\":\"Not Found\"}", &res);
-                    }
-
-                    event_ptr->response_data = construct_response(&res, &event_ptr->response_length);
-                    event_ptr->response_sent = 0;
-                    destroy_response(&res);
-                    if (event_ptr->response_data == NULL) {
-                        conn_open = 0;
-                        log_message(LOG_ERROR, "Failed to construct response");
-                        close_connection(epollfd, event_ptr);
-                        continue;
-                    }
-                    event_ptr->conn_state = WRITTEN_RESPONSE;
-                    ev.data.ptr = event_ptr;
-                    ev.events = EPOLLOUT | EPOLLRDHUP;
-                    if (epoll_ctl(epollfd, EPOLL_CTL_MOD, event_ptr->fd, &ev) == -1) {
-                        log_errno(LOG_ERROR, "epoll_ctl; response write");
-                        close_connection(epollfd, event_ptr);
-                        conn_open = 0;
-                    }
-                }
-
-                if (!conn_open) {
-                    continue;
-                }
-
-                if (event_ptr->conn_state == WRITTEN_RESPONSE && (events[i].events & EPOLLOUT)) {
-                    ssize_t bytes_sent = send(event_ptr->fd, event_ptr->response_data + event_ptr->response_sent,
-                                              event_ptr->response_length - event_ptr->response_sent, 0);
-                    if (bytes_sent > 0) {
-                        event_ptr->response_sent += bytes_sent;
-                        if (event_ptr->response_sent == event_ptr->response_length) {
-                            log_message(LOG_INFO, "%s %s %s", event_ptr->request.method, event_ptr->request.path,
-                                        event_ptr->request.protocol);
+                        event_ptr->conn_state = WRITTEN_RESPONSE;
+                        ev.data.ptr = event_ptr;
+                        ev.events = EPOLLOUT | EPOLLRDHUP;
+                        if (epoll_ctl(epollfd, EPOLL_CTL_MOD, event_ptr->fd, &ev) == -1) {
+                            log_errno(LOG_ERROR, "epoll_ctl; response write");
                             close_connection(epollfd, event_ptr);
                         }
-                    }
-                    if (bytes_sent == -1 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-                        log_errno(LOG_ERROR, "send; response write");
-                        close_connection(epollfd, event_ptr);
+                        break;
+                        // Write available response bytes without blocking the event loop.
+                        // Keep the connection until every byte is sent or a write error occurs.
+                    } else if (event_ptr->conn_state == WRITTEN_RESPONSE) {
+                        if ((events[i].events & EPOLLOUT) == 0) {
+                            break;
+                        }
+
+                        ssize_t bytes_sent = send(event_ptr->fd, event_ptr->response_data + event_ptr->response_sent,
+                                                  event_ptr->response_length - event_ptr->response_sent, 0);
+                        if (bytes_sent > 0) {
+                            event_ptr->response_sent += (size_t)bytes_sent;
+                            if (event_ptr->response_sent == event_ptr->response_length) {
+                                log_message(LOG_INFO, "%s %s %s", event_ptr->request.method, event_ptr->request.path,
+                                            event_ptr->request.protocol);
+                                close_connection(epollfd, event_ptr);
+                            }
+                        } else if (bytes_sent == 0) {
+                            log_message(LOG_ERROR, "send; response write made no progress");
+                            close_connection(epollfd, event_ptr);
+                        } else if (bytes_sent == -1 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+                            log_errno(LOG_ERROR, "send; response write");
+                            close_connection(epollfd, event_ptr);
+                        }
+                        break;
                     }
                 }
             }
