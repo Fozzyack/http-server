@@ -78,6 +78,7 @@ parse_status parse_header(http_request *request, http_request_buffer *req_buffer
 // request.c
 http_response_status response_set_header(const char *key, const char *value, http_response *response);
 http_response_status response_set_json(const char *json_string, http_response *response);
+char *construct_response(const http_response *response, size_t *response_length);
 http_response_status send_response(int client_fd, http_response *response);
 void destroy_response(http_response *response);
 void init_response(http_response *response);

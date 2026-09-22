@@ -200,8 +200,27 @@ int listen_and_accept(int server_fd, router *r) {
                         strcpy(res.status_response, "Not Found");
                         response_set_json("{\"error\":\"Not Found\"}", &res);
                     }
-                    send_response(event_ptr->fd, &res);
+
+                    event_ptr->response_data = construct_response(&res, &event_ptr->response_length);
+                    event_ptr->response_sent = 0;
                     destroy_response(&res);
+                    if (event_ptr->response_data == NULL) {
+                        conn_open = 0;
+                        log_message(LOG_ERROR, "Failed to construct response");
+                        close_connection(epollfd, event_ptr);
+                        break;
+                    }
+                    event_ptr->conn_state = WRITTEN_RESPONSE;
+                }
+
+                if (event_ptr->conn_state == WRITTEN_RESPONSE) {
+                    ev.data.ptr = event_ptr;
+                    ev.events = EPOLLOUT | EPOLLRDHUP;
+                    if (epoll_ctl(epollfd, EPOLL_CTL_MOD, event_ptr->fd, &ev) == -1) {
+                        log_errno(LOG_ERROR, "epoll_ctl; response write");
+                        close_connection(epollfd, event_ptr);
+                        conn_open = 0;
+                    }
                 }
 
                 if (!conn_open) {
