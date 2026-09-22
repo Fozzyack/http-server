@@ -1,6 +1,7 @@
 #include "http/http.h"
 #include "log/log.h"
 #include "routes/router.h"
+#include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <stddef.h>
@@ -9,6 +10,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #define MAX_EVENTS 1000
@@ -130,6 +132,10 @@ int listen_and_accept(int server_fd, router *r) {
                 parse_status status = -1;
                 int conn_open = 1;
                 for (;;) {
+                    if (event_ptr->conn_state == WRITTEN_RESPONSE) {
+                        break;
+                    }
+
                     size_t eol = 0;
                     if (event_ptr->conn_state == NEW_CONNECTION) {
                         status = read_from_socket(event_ptr->fd, &event_ptr->buffer);
@@ -208,12 +214,9 @@ int listen_and_accept(int server_fd, router *r) {
                         conn_open = 0;
                         log_message(LOG_ERROR, "Failed to construct response");
                         close_connection(epollfd, event_ptr);
-                        break;
+                        continue;
                     }
                     event_ptr->conn_state = WRITTEN_RESPONSE;
-                }
-
-                if (event_ptr->conn_state == WRITTEN_RESPONSE) {
                     ev.data.ptr = event_ptr;
                     ev.events = EPOLLOUT | EPOLLRDHUP;
                     if (epoll_ctl(epollfd, EPOLL_CTL_MOD, event_ptr->fd, &ev) == -1) {
@@ -227,13 +230,22 @@ int listen_and_accept(int server_fd, router *r) {
                     continue;
                 }
 
-                if (event_ptr->conn_state != PARSED_HEADERS) {
-                    continue;
+                if (event_ptr->conn_state == WRITTEN_RESPONSE && (events[i].events & EPOLLOUT)) {
+                    ssize_t bytes_sent = send(event_ptr->fd, event_ptr->response_data + event_ptr->response_sent,
+                                              event_ptr->response_length - event_ptr->response_sent, 0);
+                    if (bytes_sent > 0) {
+                        event_ptr->response_sent += bytes_sent;
+                        if (event_ptr->response_sent == event_ptr->response_length) {
+                            log_message(LOG_INFO, "%s %s %s", event_ptr->request.method, event_ptr->request.path,
+                                        event_ptr->request.protocol);
+                            close_connection(epollfd, event_ptr);
+                        }
+                    }
+                    if (bytes_sent == -1 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+                        log_errno(LOG_ERROR, "send; response write");
+                        close_connection(epollfd, event_ptr);
+                    }
                 }
-
-                log_message(LOG_INFO, "%s %s %s", event_ptr->request.method, event_ptr->request.path,
-                            event_ptr->request.protocol);
-                close_connection(epollfd, event_ptr);
             }
         }
     }
