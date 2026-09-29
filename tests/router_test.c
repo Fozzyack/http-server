@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <routes/router.h>
 #include <stdlib.h>
+#include <string.h>
 
 static void test_handler(const http_request *req, http_response *res) {
     (void)req;
