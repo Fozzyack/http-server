@@ -47,6 +47,7 @@ void healthcheck(const http_request *, http_response *);
 router init_router(void);
 router_status add_route(const char *path, int is_threaded, router *r,
                         void (*handler)(const http_request *, http_response *));
+const route *find_route(const http_request *req, const router *r);
 route_result execute_route(const http_request *req, const router *r, http_response *res);
 
 #endif // !ROUTER_H
