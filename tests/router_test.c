@@ -25,6 +25,13 @@ int main(void) {
     assert(execute_route(&request, &r, &response) == ROUTER_ROUTE_FOUND);
     assert(response.status == 204);
 
+    const route *matched = find_route(&request, &r);
+    assert(matched != NULL);
+    assert(strcmp(matched->path.name, "/test") == 0);
+    assert(find_route(&missing_request, &r) == NULL);
+    assert(find_route(NULL, &r) == NULL);
+    assert(find_route(&request, NULL) == NULL);
+
     response.status = 0;
     assert(execute_route(&missing_request, &r, &response) == ROUTER_ROUTE_NOT_FOUND);
     assert(response.status == 0);
