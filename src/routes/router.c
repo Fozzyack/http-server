@@ -56,6 +56,22 @@ router_status add_route(const char *path, int is_threaded, router *r,
     return ROUTER_OK;
 }
 
+const route *find_route(const http_request *req, const router *r) {
+
+    if (req == NULL || r == NULL) {
+        log_message(LOG_ERROR, "find_route: request and router must not be NULL");
+        return NULL;
+    }
+
+    for (size_t i = 0; i < r->route_count; i++) {
+        if (!strcmp(req->path, r->routes[i].path.name)) {
+            return &r->routes[i];
+        }
+    }
+
+    return NULL;
+}
+
 route_result execute_route(const http_request *req, const router *r, http_response *res) {
 
     if (req == NULL || r == NULL || res == NULL) {
@@ -63,15 +79,13 @@ route_result execute_route(const http_request *req, const router *r, http_respon
         return ROUTER_ROUTE_ERROR;
     }
 
-    for (size_t i = 0; i < r->route_count; i++) {
-
-        if (!strcmp(req->path, r->routes[i].path.name)) {
-            r->routes[i].handler.fn(req, res);
-            return ROUTER_ROUTE_FOUND;
-        }
+    const route *matched = find_route(req, r);
+    if (matched == NULL) {
+        return ROUTER_ROUTE_NOT_FOUND;
     }
-    // If  we reach here return 404
-    return ROUTER_ROUTE_NOT_FOUND;
+
+    matched->handler.fn(req, res);
+    return ROUTER_ROUTE_FOUND;
 }
 
 router_status setup_router(router *r) {
