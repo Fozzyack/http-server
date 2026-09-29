@@ -21,15 +21,17 @@ The executable currently implements the first part of an HTTP server:
   handler, and serializes the response.
 - Writes the response back without blocking the event loop, switching the client
   to `EPOLLOUT` and closing the connection once every byte is sent.
+- Hands routes registered as threaded to a fixed-size worker pool; workers build
+  the response and signal completion back to the event loop over a pipe.
 
 The router is initialized with a `/healthcheck` route and supports route
 registration, exact path lookup, and handler invocation. Unmatched paths return
-`404 Not Found` with a JSON body. Response-building helpers are used by the
-executable; a fixed-size thread pool exists in the source tree but is not wired
-in yet. The test suite covers router lookup, request parsing, response
-construction and sending, server setup, thread-pool task execution, logging
-output, and an end-to-end listener test that starts the server and speaks HTTP
-over a socket.
+`404 Not Found` with a JSON body, and a full worker queue returns `503 Service
+Unavailable`. Response-building helpers are used by the executable, and the
+thread pool is wired into the listener. The test suite covers router lookup,
+request parsing, response construction and sending, server setup, thread-pool
+task execution, logging output, and end-to-end listener tests that start the
+server and speak HTTP over a socket.
 
 ## Running It
 
@@ -95,11 +97,11 @@ yet.
 | --- | --- |
 | `src/main.c` | Starts the server on port 8080 |
 | `src/server/server.c` | TCP socket setup, binding, and listening |
-| `src/server/listener.c` | `epoll` loop, client acceptance, and request parsing |
+| `src/server/listener.c` | `epoll` loop, client acceptance, request parsing, response writing, and threaded-route dispatch |
 | `src/http/parser.c` | Buffered request-line and header parsing |
 | `src/http/response.c` | Response construction, JSON bodies, and sending helpers |
 | `src/routes/router.c` | Route registration, exact path lookup, and handler invocation |
-| `src/threadpool/threadpool.c` | Worker threads and bounded task queue (not wired into the listener) |
+| `src/threadpool/threadpool.c` | Worker threads and bounded task queue used for threaded routes |
 | `src/log/log.c` | Logging and `errno` helpers |
 | `include/` | Public interfaces and protocol data structures |
 | `tests/` | Assertion-based unit tests for routing, parsing, responses, server setup, thread-pool tasks, logging, and end-to-end listener behavior |
@@ -116,6 +118,5 @@ yet.
 
 ## Next Steps
 
-Likely next steps are to connect client work to the thread pool, handle request
-bodies and `Content-Length`, support keep-alive connection reuse, and improve
-graceful shutdown and cleanup paths.
+Likely next steps are to handle request bodies and `Content-Length`, support
+keep-alive connection reuse, and improve graceful shutdown and cleanup paths.
