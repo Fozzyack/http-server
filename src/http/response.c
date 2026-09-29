@@ -149,7 +149,7 @@ http_response_status send_response(int client_fd, http_response *response) {
 
     size_t bytes_sent = 0;
     while (bytes_sent < buffer_size) {
-        ssize_t b_sent = send(client_fd, response_data + bytes_sent, buffer_size - bytes_sent, 0);
+        ssize_t b_sent = send(client_fd, response_data + bytes_sent, buffer_size - bytes_sent, MSG_NOSIGNAL);
         if (b_sent == -1) {
             if (errno == EINTR) {
                 continue;
