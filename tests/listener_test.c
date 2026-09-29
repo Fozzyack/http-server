@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 static int connect_to_server(int port) {
@@ -78,6 +79,23 @@ static void test_not_found(int port) {
     close(fd);
 }
 
+static void test_fragmented_request(int port) {
+    char response[512];
+    const char first[] = "GET /health";
+    const char second[] = "check HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    const struct timespec pause = {.tv_sec = 0, .tv_nsec = 10000000};
+    int fd = connect_to_server(port);
+
+    send_all(fd, first, sizeof(first) - 1);
+    assert(nanosleep(&pause, NULL) == 0);
+    send_all(fd, second, sizeof(second) - 1);
+    assert(read_response(fd, response, sizeof(response)) > 0);
+    assert(strstr(response, "HTTP/1.1 200 OK\r\n") != NULL);
+    assert(strstr(response, "\r\n\r\n{\"status\":\"ok\"}") != NULL);
+
+    close(fd);
+}
+
 int main(void) {
     tcp_server_info server_info = {0};
     router router_info = {0};
@@ -102,6 +120,7 @@ int main(void) {
 
     test_healthcheck(port);
     test_not_found(port);
+    test_fragmented_request(port);
 
     assert(kill(server_pid, SIGKILL) == 0);
     assert(waitpid(server_pid, NULL, 0) == server_pid);
