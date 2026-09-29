@@ -17,16 +17,19 @@ The executable currently implements the first part of an HTTP server:
 - Reads requests incrementally into an 8 KiB buffer.
 - Parses an HTTP request line and up to 100 headers, including requests split
   across multiple reads.
-- Looks up parsed request paths in the configured router, logs the request and
-  headers, then closes the client connection.
+- Looks up parsed request paths in the configured router, invokes the matching
+  handler, and serializes the response.
+- Writes the response back without blocking the event loop, switching the client
+  to `EPOLLOUT` and closing the connection once every byte is sent.
 
 The router is initialized with a `/healthcheck` route and supports route
-registration, exact path lookup, and handler invocation. The listener has not
-yet been wired to invoke registered handlers, so the executable does not send
-responses. Response-building helpers and a fixed-size thread pool exist in the
-source tree, but neither is used by the executable. The test suite covers
-router lookup, request parsing, response construction and sending, server
-setup, thread-pool task execution, and logging output.
+registration, exact path lookup, and handler invocation. Unmatched paths return
+`404 Not Found` with a JSON body. Response-building helpers are used by the
+executable; a fixed-size thread pool exists in the source tree but is not wired
+in yet. The test suite covers router lookup, request parsing, response
+construction and sending, server setup, thread-pool task execution, logging
+output, and an end-to-end listener test that starts the server and speaks HTTP
+over a socket.
 
 ## Running It
 
@@ -41,11 +44,11 @@ make
 In another terminal, send a request with `curl`:
 
 ```sh
-curl -v http://127.0.0.1:8080/
+curl -v http://127.0.0.1:8080/healthcheck
 ```
 
-The server logs the request to standard error and then closes the connection;
-`curl` should not expect an HTTP response yet. Stop it with `Ctrl-C`.
+The server logs the request, returns a JSON response, and closes the
+connection. Stop it with `Ctrl-C`.
 
 The port is currently fixed at `8080` in `src/main.c`; there is no command-line
 configuration.
@@ -82,9 +85,9 @@ The parser currently uses fixed-size structures defined in
 | Header name | 63 characters plus the terminator |
 | Header value | 1023 characters plus the terminator |
 
-Request bodies, listener-to-router integration, request `Content-Length`
-handling, keep-alive behavior, graceful shutdown, and complete malformed-
-request handling are not implemented yet.
+Request bodies, request `Content-Length` handling, keep-alive behavior,
+graceful shutdown, and complete malformed-request handling are not implemented
+yet.
 
 ## Project Layout
 
@@ -95,11 +98,11 @@ request handling are not implemented yet.
 | `src/server/listener.c` | `epoll` loop, client acceptance, and request parsing |
 | `src/http/parser.c` | Buffered request-line and header parsing |
 | `src/http/response.c` | Response construction, JSON bodies, and sending helpers |
-| `src/routes/router.c` | Route registration, exact path lookup, and handler invocation; listener integration is not implemented yet |
-| `src/threadpool/threadpool.c` | Worker threads and bounded task queue |
+| `src/routes/router.c` | Route registration, exact path lookup, and handler invocation |
+| `src/threadpool/threadpool.c` | Worker threads and bounded task queue (not wired into the listener) |
 | `src/log/log.c` | Logging and `errno` helpers |
 | `include/` | Public interfaces and protocol data structures |
-| `tests/` | Assertion-based unit tests for routing, parsing, responses, server setup, thread-pool tasks, and logging |
+| `tests/` | Assertion-based unit tests for routing, parsing, responses, server setup, thread-pool tasks, logging, and end-to-end listener behavior |
 | `Makefile` | Build, run, test, debug, and cleanup targets |
 
 ## Areas Being Explored
@@ -113,6 +116,6 @@ request handling are not implemented yet.
 
 ## Next Steps
 
-Likely next steps are to invoke the router from the listener and generate
-responses, connect client work to the thread pool, handle request bodies and
-connection lifetime, and improve cleanup and shutdown paths.
+Likely next steps are to connect client work to the thread pool, handle request
+bodies and `Content-Length`, support keep-alive connection reuse, and improve
+graceful shutdown and cleanup paths.
