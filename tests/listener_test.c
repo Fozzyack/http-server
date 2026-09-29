@@ -1,5 +1,6 @@
 #include "routes/router.h"
 #include "server/server.h"
+#include "threadpool/threadpool.h"
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -79,6 +80,24 @@ static void test_not_found(int port) {
     close(fd);
 }
 
+static void threaded_handler(const http_request *req, http_response *res) {
+    (void)req;
+    response_set_json("{\"threaded\":true}", res);
+}
+
+static void test_threaded_route(int port) {
+    char response[512];
+    const char request[] = "GET /threaded HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    int fd = connect_to_server(port);
+
+    send_all(fd, request, sizeof(request) - 1);
+    assert(read_response(fd, response, sizeof(response)) > 0);
+    assert(strstr(response, "HTTP/1.1 200 OK\r\n") != NULL);
+    assert(strstr(response, "\r\n\r\n{\"threaded\":true}") != NULL);
+
+    close(fd);
+}
+
 static void test_fragmented_request(int port) {
     char response[512];
     const char first[] = "GET /health";
@@ -108,11 +127,14 @@ int main(void) {
     assert(getsockname(server_info.socket_fd, (struct sockaddr *)&bound_address, &bound_length) == 0);
     port = ntohs(bound_address.sin_port);
     setup_router(&router_info);
+    assert(add_route("/threaded", 1, &router_info, threaded_handler) == ROUTER_OK);
 
     pid_t server_pid = fork();
     assert(server_pid >= 0);
     if (server_pid == 0) {
-        listen_and_accept(server_info.socket_fd, &router_info);
+        threadpool pool = {0};
+        assert(threadpool_start(&pool) == THREADPOOL_OK);
+        listen_and_accept(server_info.socket_fd, &router_info, &pool);
         _exit(EXIT_SUCCESS);
     }
 
@@ -120,6 +142,7 @@ int main(void) {
 
     test_healthcheck(port);
     test_not_found(port);
+    test_threaded_route(port);
     test_fragmented_request(port);
 
     assert(kill(server_pid, SIGKILL) == 0);

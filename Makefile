@@ -35,7 +35,7 @@ LOG_TEST_OBJ = obj/tests/log_test.o obj/log/log.o
 LOG_TEST_DEPS = $(LOG_TEST_OBJ:.o=.d)
 LISTENER_TEST = bin/listener_test.out
 LISTENER_TEST_OBJ = obj/tests/listener_test.o obj/server/listener.o obj/server/server.o obj/routes/router.o \
-	obj/routes/healthcheck.o obj/http/parser.o obj/http/response.o obj/log/log.o
+	obj/routes/healthcheck.o obj/http/parser.o obj/http/response.o obj/log/log.o obj/threadpool/threadpool.o
 LISTENER_TEST_DEPS = $(LISTENER_TEST_OBJ:.o=.d)
 # --------
 

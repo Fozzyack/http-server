@@ -1,6 +1,7 @@
 #include "http/http.h"
 #include "log/log.h"
 #include "routes/router.h"
+#include "threadpool/threadpool.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -109,7 +110,45 @@ static void drain_completions(int epollfd, int completion_fd) {
     }
 }
 
-int listen_and_accept(int server_fd, router *r) {
+typedef struct route_task {
+    connection *conn;
+    const router *r;
+    int completion_fd;
+} route_task;
+
+static void notify_completion(int completion_fd, connection *conn) {
+    ssize_t written;
+    do {
+        written = write(completion_fd, &conn, sizeof(conn));
+    } while (written == -1 && errno == EINTR);
+    if (written != (ssize_t)sizeof(conn)) {
+        log_errno(LOG_ERROR, "write; route completion");
+    }
+}
+
+static void route_task_run(void *args) {
+    route_task *task = args;
+    connection *conn = task->conn;
+
+    http_response res;
+    init_response(&res);
+
+    route_result result = execute_route(&conn->request, task->r, &res);
+    if (result == ROUTER_ROUTE_NOT_FOUND) {
+        res.status = 404;
+        strcpy(res.status_response, "Not Found");
+        response_set_json("{\"error\":\"Not Found\"}", &res);
+    }
+
+    conn->response_data = construct_response(&res, &conn->response_length);
+    conn->response_sent = 0;
+    destroy_response(&res);
+
+    notify_completion(task->completion_fd, conn);
+    free(task);
+}
+
+int listen_and_accept(int server_fd, router *r, threadpool *pool) {
 
     struct sockaddr_in client_info = {0};
     socklen_t client_info_len = sizeof(client_info);
@@ -257,6 +296,30 @@ int listen_and_accept(int server_fd, router *r) {
                         // Route the complete request and serialize the resulting response.
                         // Switch epoll to write readiness, then yield until EPOLLOUT arrives.
                     } else if (event_ptr->conn_state == PARSED_HEADERS) {
+                        const route *matched = find_route(&event_ptr->request, r);
+                        if (matched != NULL && matched->is_threaded) {
+                            route_task *task = malloc(sizeof(route_task));
+                            if (task == NULL) {
+                                log_errno(LOG_ERROR, "malloc; route task");
+                                close_connection(epollfd, event_ptr);
+                                break;
+                            }
+                            task->conn = event_ptr;
+                            task->r = r;
+                            task->completion_fd = completion_pipe[1];
+                            event_ptr->conn_state = ROUTE_PENDING;
+                            if (threadpool_enqueue_task(route_task_run, task, pool) != THREADPOOL_OK) {
+                                free(task);
+                                http_response res;
+                                init_response(&res);
+                                res.status = 503;
+                                strcpy(res.status_response, "Service Unavailable");
+                                response_set_json("{\"error\":\"Service Unavailable\"}", &res);
+                                prepare_response(epollfd, event_ptr, &res);
+                            }
+                            break;
+                        }
+
                         http_response res;
                         init_response(&res);
 

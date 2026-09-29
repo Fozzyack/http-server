@@ -2,6 +2,7 @@
 #define SERVER_H
 
 #include "routes/router.h"
+#include "threadpool/threadpool.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
@@ -23,6 +24,6 @@ typedef struct {
 
 tcp_server_status bind_tcp_server(tcp_server_info *server_info);
 tcp_server_status init_server(tcp_server_info *server_info, int port);
-int listen_and_accept(int server_fd, router *r);
+int listen_and_accept(int server_fd, router *r, threadpool *pool);
 
 #endif // !SERVER_H
