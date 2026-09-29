@@ -65,6 +65,19 @@ static void test_healthcheck(int port) {
     close(fd);
 }
 
+static void test_not_found(int port) {
+    char response[512];
+    const char request[] = "GET /missing HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    int fd = connect_to_server(port);
+
+    send_all(fd, request, sizeof(request) - 1);
+    assert(read_response(fd, response, sizeof(response)) > 0);
+    assert(strstr(response, "HTTP/1.1 404 Not Found\r\n") != NULL);
+    assert(strstr(response, "\r\n\r\n{\"error\":\"Not Found\"}") != NULL);
+
+    close(fd);
+}
+
 int main(void) {
     tcp_server_info server_info = {0};
     router router_info = {0};
@@ -88,6 +101,7 @@ int main(void) {
     close(server_info.socket_fd);
 
     test_healthcheck(port);
+    test_not_found(port);
 
     assert(kill(server_pid, SIGKILL) == 0);
     assert(waitpid(server_pid, NULL, 0) == server_pid);
