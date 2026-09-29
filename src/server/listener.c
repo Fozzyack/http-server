@@ -340,7 +340,7 @@ int listen_and_accept(int server_fd, router *r, threadpool *pool) {
                         }
 
                         ssize_t bytes_sent = send(event_ptr->fd, event_ptr->response_data + event_ptr->response_sent,
-                                                  event_ptr->response_length - event_ptr->response_sent, 0);
+                                                  event_ptr->response_length - event_ptr->response_sent, MSG_NOSIGNAL);
                         if (bytes_sent > 0) {
                             event_ptr->response_sent += (size_t)bytes_sent;
                             if (event_ptr->response_sent == event_ptr->response_length) {
