@@ -57,6 +57,28 @@ int close_connection(int epollfd, connection *conn) {
     return 0;
 }
 
+static void prepare_response(int epollfd, connection *conn, http_response *response) {
+    conn->response_data = construct_response(response, &conn->response_length);
+    conn->response_sent = 0;
+    destroy_response(response);
+
+    if (conn->response_data == NULL) {
+        log_message(LOG_ERROR, "Failed to construct response");
+        close_connection(epollfd, conn);
+        return;
+    }
+
+    conn->conn_state = WRITTEN_RESPONSE;
+
+    struct epoll_event ev = {0};
+    ev.data.ptr = conn;
+    ev.events = EPOLLOUT | EPOLLRDHUP;
+    if (epoll_ctl(epollfd, EPOLL_CTL_MOD, conn->fd, &ev) == -1) {
+        log_errno(LOG_ERROR, "epoll_ctl; response write");
+        close_connection(epollfd, conn);
+    }
+}
+
 int listen_and_accept(int server_fd, router *r) {
 
     struct sockaddr_in client_info = {0};
@@ -191,22 +213,7 @@ int listen_and_accept(int server_fd, router *r) {
                             response_set_json("{\"error\":\"Not Found\"}", &res);
                         }
 
-                        event_ptr->response_data = construct_response(&res, &event_ptr->response_length);
-                        event_ptr->response_sent = 0;
-                        destroy_response(&res);
-                        if (event_ptr->response_data == NULL) {
-                            log_message(LOG_ERROR, "Failed to construct response");
-                            close_connection(epollfd, event_ptr);
-                            break;
-                        }
-
-                        event_ptr->conn_state = WRITTEN_RESPONSE;
-                        ev.data.ptr = event_ptr;
-                        ev.events = EPOLLOUT | EPOLLRDHUP;
-                        if (epoll_ctl(epollfd, EPOLL_CTL_MOD, event_ptr->fd, &ev) == -1) {
-                            log_errno(LOG_ERROR, "epoll_ctl; response write");
-                            close_connection(epollfd, event_ptr);
-                        }
+                        prepare_response(epollfd, event_ptr, &res);
                         break;
                         // Write available response bytes without blocking the event loop.
                         // Keep the connection until every byte is sent or a write error occurs.
