@@ -33,9 +33,13 @@ THREADPOOL_TEST_DEPS = $(THREADPOOL_TEST_OBJ:.o=.d)
 LOG_TEST = bin/log_test.out
 LOG_TEST_OBJ = obj/tests/log_test.o obj/log/log.o
 LOG_TEST_DEPS = $(LOG_TEST_OBJ:.o=.d)
+LISTENER_TEST = bin/listener_test.out
+LISTENER_TEST_OBJ = obj/tests/listener_test.o obj/server/listener.o obj/server/server.o obj/routes/router.o \
+	obj/routes/healthcheck.o obj/http/parser.o obj/http/response.o obj/log/log.o
+LISTENER_TEST_DEPS = $(LISTENER_TEST_OBJ:.o=.d)
 # --------
 
-.PHONY: default clean clean-all clean-debug debug test test-router test-parser test-response test-server test-threadpool test-log
+.PHONY: default clean clean-all clean-debug debug test test-router test-parser test-response test-server test-threadpool test-log test-listener
 
 default: $(TARGET)
 
@@ -45,7 +49,7 @@ run: $(TARGET)
 debug: $(DEBUG)
 
 
--include $(DEPS) $(ROUTER_TEST_DEPS) $(PARSER_TEST_DEPS) $(RESPONSE_TEST_DEPS) $(SERVER_TEST_DEPS) $(THREADPOOL_TEST_DEPS) $(LOG_TEST_DEPS)
+-include $(DEPS) $(ROUTER_TEST_DEPS) $(PARSER_TEST_DEPS) $(RESPONSE_TEST_DEPS) $(SERVER_TEST_DEPS) $(THREADPOOL_TEST_DEPS) $(LOG_TEST_DEPS) $(LISTENER_TEST_DEPS)
 
 all: $(TARGET) $(DEBUG)
 
@@ -81,7 +85,7 @@ obj/debug/%.o: src/%.c
 
 # TEST BUILD / RUNNERS
 
-test: test-router test-parser test-response test-server test-threadpool test-log
+test: test-router test-parser test-response test-server test-threadpool test-log test-listener
 
 test-router: $(ROUTER_TEST)
 	./$(ROUTER_TEST)
@@ -107,6 +111,10 @@ test-log: $(LOG_TEST)
 	./$(LOG_TEST)
 	@printf '[PASS] log\n'
 
+test-listener: $(LISTENER_TEST)
+	./$(LISTENER_TEST)
+	@printf '[PASS] listener\n'
+
 $(ROUTER_TEST): $(ROUTER_TEST_OBJ)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ $^
@@ -128,6 +136,10 @@ $(THREADPOOL_TEST): $(THREADPOOL_TEST_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(LOG_TEST): $(LOG_TEST_OBJ)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(LISTENER_TEST): $(LISTENER_TEST_OBJ)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ $^
 
