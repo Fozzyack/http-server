@@ -20,6 +20,7 @@ typedef enum {
     PARSED_REQUEST_LINE,
     PARSED_HEADERS,
     PARSED_BODY,
+    ROUTE_PENDING,
     ROUTE_FOUND,
     ROUTE_NOT_FOUND,
     WRITTEN_RESPONSE,
@@ -28,6 +29,7 @@ typedef enum {
 typedef struct connection {
     int fd;
     int conn_state;
+    int pending_close;
 
     http_request request;
     http_request_buffer buffer;
