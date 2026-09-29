@@ -232,6 +232,11 @@ int listen_and_accept(int server_fd, router *r) {
                             close_connection(epollfd, event_ptr);
                         }
                         break;
+                    } else if (event_ptr->conn_state == ROUTE_PENDING) {
+                        if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
+                            event_ptr->pending_close = 1;
+                        }
+                        break;
                     }
                 }
             }
