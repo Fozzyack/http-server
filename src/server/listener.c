@@ -79,14 +79,47 @@ static void prepare_response(int epollfd, connection *conn, http_response *respo
     }
 }
 
+static void handle_completed_route(int epollfd, connection *conn) {
+    if (conn->response_data == NULL) {
+        log_message(LOG_ERROR, "Failed to construct response");
+        close_connection(epollfd, conn);
+        return;
+    }
+
+    if (conn->pending_close) {
+        close_connection(epollfd, conn);
+        return;
+    }
+
+    conn->conn_state = WRITTEN_RESPONSE;
+
+    struct epoll_event ev = {0};
+    ev.data.ptr = conn;
+    ev.events = EPOLLOUT | EPOLLRDHUP;
+    if (epoll_ctl(epollfd, EPOLL_CTL_MOD, conn->fd, &ev) == -1) {
+        log_errno(LOG_ERROR, "epoll_ctl; response write");
+        close_connection(epollfd, conn);
+    }
+}
+
+static void drain_completions(int epollfd, int completion_fd) {
+    connection *completed = NULL;
+    while (read(completion_fd, &completed, sizeof(completed)) == (ssize_t)sizeof(completed)) {
+        handle_completed_route(epollfd, completed);
+    }
+}
+
 int listen_and_accept(int server_fd, router *r) {
 
     struct sockaddr_in client_info = {0};
     socklen_t client_info_len = sizeof(client_info);
     struct epoll_event ev, events[MAX_EVENTS];
     int nfds, epollfd, conn_fd = -1;
+    int completion_pipe[2];
 
     connection server_conn = {0};
+    connection completion_conn = {0};
+
     server_conn.fd = server_fd;
     ev.data.ptr = (connection *)&server_conn;
     ev.events = EPOLLIN;
@@ -102,6 +135,23 @@ int listen_and_accept(int server_fd, router *r) {
         return -1;
     }
 
+    if (pipe(completion_pipe) == -1) {
+        perror("pipe");
+        return -1;
+    }
+    if (setnonblocking(completion_pipe[0]) == -1) {
+        perror("setnonblocking");
+        return -1;
+    }
+
+    completion_conn.fd = completion_pipe[0];
+    ev.data.ptr = (connection *)&completion_conn;
+    ev.events = EPOLLIN;
+    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, completion_pipe[0], &ev) == -1) {
+        perror("epoll_ctl; completion_pipe");
+        return -1;
+    }
+
     for (;;) {
         nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
         if (nfds == -1) {
@@ -111,6 +161,10 @@ int listen_and_accept(int server_fd, router *r) {
 
         for (int i = 0; i < nfds; i++) {
             connection *event_ptr = events[i].data.ptr;
+            if (event_ptr == &completion_conn) {
+                drain_completions(epollfd, completion_pipe[0]);
+                continue;
+            }
             if (event_ptr && event_ptr->fd == server_fd) {
                 conn_fd = accept(server_fd, (struct sockaddr *)&client_info, &client_info_len);
                 if (conn_fd == -1) {
