@@ -102,6 +102,7 @@ int listen_and_accept(int server_fd, router *r) {
                 }
                 conn->fd = conn_fd;
                 conn->conn_state = NEW_CONNECTION;
+                conn->pending_close = 0;
                 conn->response_data = NULL;
                 conn->response_length = 0;
                 conn->response_sent = 0;
